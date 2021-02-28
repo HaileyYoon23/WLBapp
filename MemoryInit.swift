@@ -14,6 +14,8 @@ let path_init: String = {
       return fm.urls(for:.libraryDirectory, in:.userDomainMask).last!
                .appendingPathComponent("InitTable.db").path
     }()
+var dbDateFormatter: DateFormatter = DateFormatter()
+
 let createInitTableString = """
    CREATE TABLE IF NOT EXISTS InitTable(
    Id Int PRIMARY KEY NOT NULL,
@@ -24,7 +26,8 @@ let createInitTableString = """
    DayLeastHour Int,
    DayLeastMin Int,
    DayLeastStartHour Int,
-   DayLeastStartMin Int);
+   DayLeastStartMin Int,
+   LastUpdatedDate CHAR(255));
    """
 
 class Info {
@@ -36,8 +39,9 @@ class Info {
     var dayLeastMin: Int
     var dayLeastStartHour: Int
     var dayLeastStartMin: Int
+    var lastUpdatedDate: String?
     
-    init(_ weekLeastHour: Int, weekLeastMin: Int, dayGoalHour: Int, dayGoalMin: Int, dayLeastHour: Int, dayLeastMin: Int, dayLeastStartHour: Int, dayLeastStartMin: Int) {
+    init(_ weekLeastHour: Int, weekLeastMin: Int, dayGoalHour: Int, dayGoalMin: Int, dayLeastHour: Int, dayLeastMin: Int, dayLeastStartHour: Int, dayLeastStartMin: Int, lastUpdatedDate: String?) {
         self.weekLeastHour = weekLeastHour
         self.weekLeastMin = weekLeastMin
         self.dayGoalHour = dayGoalHour
@@ -46,11 +50,13 @@ class Info {
         self.dayLeastMin = dayLeastMin
         self.dayLeastStartHour = dayLeastStartHour
         self.dayLeastStartMin = dayLeastStartMin
+        self.lastUpdatedDate = lastUpdatedDate
     }
 }
 
 class InitDB: NSObject {
     override init() {
+        dbDateFormatter.dateFormat = "yyyy.MM.dd"
         if sqlite3_open(path_init, &db_init) == SQLITE_OK {
             if sqlite3_exec(db_init,createInitTableString,nil,nil,nil) == SQLITE_OK {
                 return
@@ -62,7 +68,7 @@ class InitDB: NSObject {
         sqlite3_close(db_init)
     }
     
-    let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    static let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     
     func createInfoDB() {
       var createTableStatement: OpaquePointer?
@@ -78,8 +84,8 @@ class InitDB: NSObject {
       sqlite3_finalize(createTableStatement)
     }
     
-    func insertInfo(weekLeastHour: Int, weekLeastMin: Int, dayGoalHour: Int, dayGoalMin: Int, dayLeastHour: Int, dayLeastMin: Int, dayLeastStartHour: Int, dayLeastStartMin: Int) -> Int {
-        let insertStatementString = "INSERT INTO InitTable (Id, WeekLeastHour, WeekLeastMin, DayGoalHour, DayGoalMin, DayLeastHour, DayLeastMin, DayLeastStartHour, DayLeastStartMin) VALUES (?,?,?,?,?,?,?,?,?);"
+    static func insertInfo(weekLeastHour: Int, weekLeastMin: Int, dayGoalHour: Int, dayGoalMin: Int, dayLeastHour: Int, dayLeastMin: Int, dayLeastStartHour: Int, dayLeastStartMin: Int, lastUpdatedDate: Date?) -> Int {
+        let insertStatementString = "INSERT INTO InitTable (Id, WeekLeastHour, WeekLeastMin, DayGoalHour, DayGoalMin, DayLeastHour, DayLeastMin, DayLeastStartHour, DayLeastStartMin, LastUpdatedDate) VALUES (?,?,?,?,?,?,?,?,?,?);"
         var statement: OpaquePointer?
         
         if sqlite3_prepare(db_init, insertStatementString, -1, &statement, nil) == SQLITE_OK {       // 쿼리 생성
@@ -93,6 +99,11 @@ class InitDB: NSObject {
             sqlite3_bind_int(statement, 7, Int32(dayLeastMin))
             sqlite3_bind_int(statement, 8, Int32(dayLeastStartHour))
             sqlite3_bind_int(statement, 9, Int32(dayLeastStartMin))
+            if let lastUD = lastUpdatedDate {
+                sqlite3_bind_text(statement, 10, dbFormatter.string(from: lastUD), -1, SQLITE_TRANSIENT)
+            } else {
+                sqlite3_bind_text(statement, 10, "none", -1, SQLITE_TRANSIENT)
+            }
             
             if sqlite3_step(statement) == SQLITE_DONE {         // 쿼리 실행
 //                print("DB Insert Row Success\n")
@@ -104,11 +115,72 @@ class InitDB: NSObject {
         }
         
         sqlite3_finalize(statement)         // 쿼리 반환
-        return Int(sqlite3_last_insert_rowid(db))
+        return Int(sqlite3_last_insert_rowid(db_init))
     }
     
-    func updateInfo(weekLeastHour: Int, weekLeastMin: Int, dayGoalHour: Int, dayGoalMin: Int, dayLeastHour: Int, dayLeastMin: Int, dayLeastStartHour: Int, dayLeastStartMin: Int) {
-        let updateStatementString = "UPDATE InitTable SET WeekLeastHour = '\(weekLeastHour)', WeekLeastMin = '\(weekLeastMin)', DayGoalHour = '\(dayGoalHour)', DayGoalMin = '\(dayGoalMin)', DayLeastHour = \(dayLeastHour), DayLeastMin = \(dayLeastMin), DayLeastStartHour = \(dayLeastStartHour), DayLeastStartMin = \(dayLeastStartMin) WHERE Id = \(0);"
+    static func updateInfo(weekLeastHour: Int?, weekLeastMin: Int?, dayGoalHour: Int?, dayGoalMin: Int?, dayLeastHour: Int?, dayLeastMin: Int?, dayLeastStartHour: Int?, dayLeastStartMin: Int?, lastUpdatedDate: Date?) {
+        var updateStatementString = "UPDATE InitTable SET "
+        var prevStatementExist = false
+        if let wLH = weekLeastHour {
+            updateStatementString += "WeekLeastHour = \(wLH)"
+            prevStatementExist = true
+        }
+        if let wLM = weekLeastMin {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "WeekLeastMin = \(wLM)"
+            prevStatementExist = true
+        }
+        if let dGH = dayGoalHour {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "DayGoalHour = \(dGH)"
+            prevStatementExist = true
+        }
+        if let dGM = dayGoalMin {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "DayGoalMin = \(dGM)"
+            prevStatementExist = true
+        }
+        if let dLH = dayLeastHour {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "DayLeastHour = \(dLH)"
+            prevStatementExist = true
+        }
+        if let dLM = dayLeastMin {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "DayLeastHour = \(dLM)"
+            prevStatementExist = true
+        }
+        if let dLSH = dayLeastStartHour {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "DayLeastStartHour = \(dLSH)"
+            prevStatementExist = true
+        }
+        if let dLSM = dayLeastStartMin {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "DayLeastStartMin = \(dLSM)"
+            prevStatementExist = true
+        }
+        if let lastUD = lastUpdatedDate {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "LastUpdatedDate = '\(dbDateFormatter.string(from: lastUD))'"
+        }
+        updateStatementString += " WHERE Id = \(0);"
         var statement: OpaquePointer?
         
         if sqlite3_prepare(db_init, updateStatementString, -1, &statement, nil) == SQLITE_OK {
@@ -124,7 +196,7 @@ class InitDB: NSObject {
         sqlite3_finalize(statement)
     }
     
-    func readInfo() -> Info? {
+    static func readInfo() -> Info? {
         let readWorkedItemStatementString = "SELECT * FROM InitTable WHERE Id = \(0);"
         var statement: OpaquePointer?
         var item: Info? = nil
@@ -138,8 +210,11 @@ class InitDB: NSObject {
                 let dayLeastMin = sqlite3_column_int(statement, 6)
                 let dayLeastStartHour = sqlite3_column_int(statement, 7)
                 let dayLeastStartMin = sqlite3_column_int(statement, 8)
+                guard let lastUpdatedDate = sqlite3_column_text(statement, 9) else {
+                    return nil
+                }
                 
-                let info: Info = Info(Int(weekLeastHour), weekLeastMin: Int(weekLeastMin), dayGoalHour: Int(dayGoalHour), dayGoalMin: Int(dayGoalMin), dayLeastHour: Int(dayLeastHour), dayLeastMin: Int(dayLeastMin), dayLeastStartHour: Int(dayLeastStartHour), dayLeastStartMin: Int(dayLeastStartMin))
+                let info: Info = Info(Int(weekLeastHour), weekLeastMin: Int(weekLeastMin), dayGoalHour: Int(dayGoalHour), dayGoalMin: Int(dayGoalMin), dayLeastHour: Int(dayLeastHour), dayLeastMin: Int(dayLeastMin), dayLeastStartHour: Int(dayLeastStartHour), dayLeastStartMin: Int(dayLeastStartMin), lastUpdatedDate: String(cString: lastUpdatedDate))
                 item = info
             }
         } else {
@@ -150,7 +225,7 @@ class InitDB: NSObject {
         return item
     }
     
-    func deleteAllWorkedList() {
+    static func deleteInfoAll() {
         let deleteAllStatementString = "DELETE FROM InitTable"
         var statement: OpaquePointer?
         
@@ -158,16 +233,16 @@ class InitDB: NSObject {
             if sqlite3_step(statement) == SQLITE_DONE {
 //                print("DB Delete All Success\n")
             } else {
-                print("DB Delete All Failed\n")
+                print("DB DeleteInfoAll Failed\n")
             }
         } else {
-            print("Query is not prepared for DeleteAll\n")
+            print("Query is not prepared for DeleteInfoAll\n")
         }
         
         sqlite3_finalize(statement)
     }
 
-    func deleteTableWorkedList() {
+    static func deleteWeekTable() {
         let deleteStatementString = "DROP TABLE InitTable;"
         var statement: OpaquePointer?
         

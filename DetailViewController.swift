@@ -71,10 +71,10 @@ class DetailViewController: UIViewController {
     
     func showDetailWokredListOfWeek() {
         for i in 0...weekDayNumber {
-            // 일주일 Date를 불러오는 API 생성 필요.. 후에 수정해야할 부분
-            let myDateComponents = DateComponents(year: 2021, month: 2, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
             let myDate = Calendar.current.date(from: myDateComponents)!
             let workedTime = WorkedListDB.readWorkedItem(id: myDate) ?? WorkedItem("--:--", commute: "--:--", offWork: "--:--", rest: 0.0, realWorkedTime: 0.0, workedTime: 0.0, weekDay: 0, dayWorkStatus: 0, spareTimeToWork: 0.0)
+            
             weekCommuteList[i].text = workedTime.commute
             weekOffWorkList[i].text = workedTime.offWork
             weekNotWorkList[i].text = String(format: "%02d:%02d", Int(workedTime.rest/3600), Int(workedTime.rest/60) % 60)
@@ -89,32 +89,70 @@ class DetailViewController: UIViewController {
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "EditFromMon" {
+            let i = 0
             let vc = segue.destination as! EditDetailViewController
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDate = Calendar.current.date(from: myDateComponents)!
+            
+            vc.fromDate = myDate
             vc.fromWhat = "Mon"
+            vc.fromWeekDay = i + 2
         } else if segue.identifier == "EditFromTue" {
+            let i = 1
             let vc = segue.destination as! EditDetailViewController
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDate = Calendar.current.date(from: myDateComponents)!
+            
+            vc.fromDate = myDate
             vc.fromWhat = "Tue"
+            vc.fromWeekDay = i + 2
         } else if segue.identifier == "EditFromWed" {
+            let i = 2
             let vc = segue.destination as! EditDetailViewController
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDate = Calendar.current.date(from: myDateComponents)!
+            
+            vc.fromDate = myDate
             vc.fromWhat = "Wed"
+            vc.fromWeekDay = i + 2
         } else if segue.identifier == "EditFromThr" {
+            let i = 3
             let vc = segue.destination as! EditDetailViewController
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDate = Calendar.current.date(from: myDateComponents)!
+            
+            vc.fromDate = myDate
             vc.fromWhat = "Thr"
+            vc.fromWeekDay = i + 2
         } else if segue.identifier == "EditFromFri" {
+            let i = 4
             let vc = segue.destination as! EditDetailViewController
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDate = Calendar.current.date(from: myDateComponents)!
+            
+            vc.fromDate = myDate
             vc.fromWhat = "Fri"
+            vc.fromWeekDay = i + 2
         } else if segue.identifier == "EditFromSat" {
+            let i = 5
             let vc = segue.destination as! EditDetailViewController
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDate = Calendar.current.date(from: myDateComponents)!
+            
+            vc.fromDate = myDate
             vc.fromWhat = "Sat"
+            vc.fromWeekDay = i + 2
         } else if segue.identifier == "EditFromSun" {
+            let i = 6
             let vc = segue.destination as! EditDetailViewController
+            let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
+            let myDate = Calendar.current.date(from: myDateComponents)!
+            
+            vc.fromDate = myDate
             vc.fromWhat = "Sun"
+            vc.fromWeekDay = (i + 2) % 7
         }
-        
     }
-    
-    
-    
     
     @objc func updateHistory() {
         showDetailWokredListOfWeek()

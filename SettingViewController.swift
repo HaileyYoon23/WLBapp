@@ -17,8 +17,6 @@ class SettingViewController: UIViewController {
     @IBOutlet var dayLeastStartHour: UITextField!
     @IBOutlet var dayLeastStartMin: UITextField!
     
-    let DBInit = InitDB()
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -26,7 +24,7 @@ class SettingViewController: UIViewController {
 //        DBInit.deleteTableWorkedList()
 //        DBInit.createInfoDB()
 //        
-        if let prevInfo = DBInit.readInfo() {
+        if let prevInfo = InitDB.readInfo() {
             weekLeastHour.text = (((prevInfo.weekLeastHour / 10) == 0) ? "0" : "") + String(prevInfo.weekLeastHour)
             weekLeastMin.text = (((prevInfo.weekLeastMin / 10) == 0) ? "0" : "") + String(prevInfo.weekLeastMin)
             dayGoalHour.text = (((prevInfo.dayGoalHour / 10) == 0) ? "0" : "") + String(prevInfo.dayGoalHour)
@@ -49,10 +47,10 @@ class SettingViewController: UIViewController {
     }
     
     @IBAction func btnComplete(_ sender: UIButton) {
-        if DBInit.readInfo() != nil {
-            DBInit.updateInfo(weekLeastHour: Int(weekLeastHour.text ?? "-1") ?? -1, weekLeastMin: Int(weekLeastMin .text ?? "-1") ?? -1, dayGoalHour: Int(dayGoalHour.text ?? "-1") ?? -1, dayGoalMin: Int(dayGoalMin.text ?? "-1") ?? -1, dayLeastHour: Int(dayLeastHour.text ?? "-1") ?? -1, dayLeastMin: Int(dayLeastMin.text ?? "-1") ?? -1, dayLeastStartHour: Int(dayLeastStartHour.text ?? "-1") ?? -1, dayLeastStartMin: Int(dayLeastStartMin.text ?? "-1") ?? -1)
+        if InitDB.readInfo() != nil {
+            InitDB.updateInfo(weekLeastHour: Int(weekLeastHour.text ?? "-1") ?? -1, weekLeastMin: Int(weekLeastMin .text ?? "-1") ?? -1, dayGoalHour: Int(dayGoalHour.text ?? "-1") ?? -1, dayGoalMin: Int(dayGoalMin.text ?? "-1") ?? -1, dayLeastHour: Int(dayLeastHour.text ?? "-1") ?? -1, dayLeastMin: Int(dayLeastMin.text ?? "-1") ?? -1, dayLeastStartHour: Int(dayLeastStartHour.text ?? "-1") ?? -1, dayLeastStartMin: Int(dayLeastStartMin.text ?? "-1") ?? -1, lastUpdatedDate: nil)
         } else {
-            _ = DBInit.insertInfo(weekLeastHour: Int(weekLeastHour.text ?? "-1") ?? -1, weekLeastMin: Int(weekLeastMin .text ?? "-1") ?? -1, dayGoalHour: Int(dayGoalHour.text ?? "-1") ?? -1, dayGoalMin: Int(dayGoalMin.text ?? "-1") ?? -1, dayLeastHour: Int(dayLeastHour.text ?? "-1") ?? -1, dayLeastMin: Int(dayLeastMin.text ?? "-1") ?? -1, dayLeastStartHour: Int(dayLeastStartHour.text ?? "-1") ?? -1, dayLeastStartMin: Int(dayLeastStartMin.text ?? "-1") ?? -1)
+            _ = InitDB.insertInfo(weekLeastHour: Int(weekLeastHour.text ?? "-1") ?? -1, weekLeastMin: Int(weekLeastMin .text ?? "-1") ?? -1, dayGoalHour: Int(dayGoalHour.text ?? "-1") ?? -1, dayGoalMin: Int(dayGoalMin.text ?? "-1") ?? -1, dayLeastHour: Int(dayLeastHour.text ?? "-1") ?? -1, dayLeastMin: Int(dayLeastMin.text ?? "-1") ?? -1, dayLeastStartHour: Int(dayLeastStartHour.text ?? "-1") ?? -1, dayLeastStartMin: Int(dayLeastStartMin.text ?? "-1") ?? -1, lastUpdatedDate: nil)
         }
     }
     

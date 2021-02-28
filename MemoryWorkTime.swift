@@ -70,7 +70,7 @@ class WorkedListDB: NSObject {
     deinit {
         sqlite3_close(db)
     }
-    let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    static let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
     
     func createTableWorkedList() {
@@ -87,7 +87,7 @@ class WorkedListDB: NSObject {
       sqlite3_finalize(createTableStatement)
     }
     
-    func insertWorkedTime(id: Date, Commute: Date, OffWork: Date, Rest: TimeInterval, RealWorkedTime: TimeInterval, WorkedTime: TimeInterval, WeekDay: Int, DayWorkStatus: Int) -> Int {
+    static func insertWorkedTime(id: Date, Commute: Date, OffWork: Date, Rest: TimeInterval, RealWorkedTime: TimeInterval, WorkedTime: TimeInterval, WeekDay: Int, DayWorkStatus: Int) -> Int {
         let insertStatementString = "INSERT INTO WorkedList (Id, Commute, OffWork, Rest, RealWorkedTime, WorkedTime, WeekDay, DayWorkStatus, SpareTimeToWork) VALUES (?,?,?,?,?,?,?,?,?);"
         var statement: OpaquePointer?
         
@@ -102,7 +102,11 @@ class WorkedListDB: NSObject {
             sqlite3_bind_int(statement, 7, Int32(WeekDay))
             sqlite3_bind_int(statement, 8, Int32(DayWorkStatus))
             if WeekDay == 2 {
-                sqlite3_bind_int(statement, 9, Int32(40 * 3600))
+                let info = InitDB.readInfo()!
+                let weekInfo = WeekDB.readWeekInfo(id)
+                if weekInfo == nil { print("Error WeekInfo nil")}
+                let initialWorkTime = info.weekLeastHour * 3600 + info.weekLeastMin * 60 - (weekInfo!.numOfNonWorkFullDay * 8 * 3600 + weekInfo!.numOfNonWorkHalfDay * 4 * 3600)
+                sqlite3_bind_int(statement, 9, Int32(initialWorkTime))
             } else {
                 var myDateComponents = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: id)
                 myDateComponents.day = myDateComponents.day! - 1
@@ -124,25 +128,92 @@ class WorkedListDB: NSObject {
         return Int(sqlite3_last_insert_rowid(db))
     }
     
-    func updateWorkedTime(id: Date, Commute: Date?, OffWork: Date?, Rest: TimeInterval, RealWorkedTime: TimeInterval, WorkedTime: TimeInterval, WeekDay: Int, DayWorkStatus: Int) {
-        let spareTime: Int
-        if WeekDay == 2 {
-            spareTime = 40 * 3600 - Int(WorkedTime)
+    static func updateWorkedTime(id: Date, Commute: Date?, OffWork: Date?, Rest: TimeInterval?, RealWorkedTime: TimeInterval?, WorkedTime: TimeInterval?, WeekDay: Int?, DayWorkStatus: Int?, spareTimeIfRealTimeIsNil: TimeInterval?) {
+        let spareTime: TimeInterval
+        
+        var updateStatementString = "UPDATE WorkedList SET "
+        var prevStatementExist = false
+        if let _ = Commute {
+            updateStatementString += "Commute = '\(dbFormatter.string(from: Commute!))'"
+            prevStatementExist = true
+        }
+        if let _ = OffWork {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "OffWork = '\(dbFormatter.string(from: OffWork!))'"
+            prevStatementExist = true
+        }
+        if let rest = Rest {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "Rest = \(rest)"
+            prevStatementExist = true
+        }
+        if let real = RealWorkedTime {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "RealWorkedTime = \(real)"
+            prevStatementExist = true
+        }
+        if let worked = WorkedTime {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "WorkedTime = \(worked)"
+            prevStatementExist = true
+        }
+        if let weekday = WeekDay {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "WeekDay = \(weekday)"
+            prevStatementExist = true
+        }
+        if let status = DayWorkStatus {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "DayWorkStatus = \(status)"
+            prevStatementExist = true
+        }
+        
+        if let realworkedtime = RealWorkedTime {
+            if WeekDay == 2 {
+                let info = InitDB.readInfo()!
+                let weekInfo = WeekDB.readWeekInfo(id)
+                if weekInfo == nil { print("Error WeekInfo nil")}
+                let initialWorkTime = info.weekLeastHour * 3600 + info.weekLeastMin * 60 - (weekInfo!.numOfNonWorkFullDay * 8 * 3600 + weekInfo!.numOfNonWorkHalfDay * 4 * 3600)
+                spareTime = TimeInterval(initialWorkTime - Int(realworkedtime))
+            } else {
+                var myDateComponents = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: id)
+                myDateComponents.day = myDateComponents.day! - 1
+                let yesterDate = Calendar.current.date(from: myDateComponents)!
+                let yesterDateItem = WorkedListDB.readWorkedItem(id: yesterDate)!
+                spareTime = TimeInterval(Int(yesterDateItem.spareTimeToWork - realworkedtime))
+            }
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "SpareTimeToWork = \(spareTime)"
+            prevStatementExist = true
         } else {
-            var myDateComponents = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: id)
-            myDateComponents.day = myDateComponents.day! - 1
-            let yesterDate = Calendar.current.date(from: myDateComponents)!
-            let yesterDateItem = WorkedListDB.readWorkedItem(id: yesterDate)!
-            spareTime = Int(yesterDateItem.spareTimeToWork - WorkedTime)
+            if let spare = spareTimeIfRealTimeIsNil {
+                spareTime = spare
+                if prevStatementExist {
+                    updateStatementString += ", "
+                }
+                updateStatementString += "SpareTimeToWork = \(spareTime)"
+                prevStatementExist = true
+            } else {
+//                present(BasicOperation.AlertToManage(errorCode: "SpareTimeRealTimeBothNil"), animated: true, completion: nil)
+                // TBD : need to show Error
+                // print("Error Code: pareTimeRealTimeBothNil" )
+            }
         }
-        var updateStatementString = "UPDATE WorkedList SET"
-        if Commute != nil {
-            updateStatementString += " Commute = '\(dbFormatter.string(from: Commute!))',"
-        }
-        if OffWork != nil {
-            updateStatementString += " OffWork = '\(dbFormatter.string(from: OffWork!))',"
-        }
-        updateStatementString += " Rest = \(Rest), RealWorkedTime = \(RealWorkedTime), WorkedTime = \(WorkedTime), WeekDay = \(WeekDay), DayWorkStatus = \(DayWorkStatus), SpareTimeToWork = \(spareTime) WHERE Id = '\(dbIdFormatter.string(from: id))';"
+        updateStatementString += " WHERE Id = '\(dbIdFormatter.string(from: id))';"
         
         var statement: OpaquePointer?
         
@@ -192,7 +263,7 @@ class WorkedListDB: NSObject {
         return item
     }
     
-    func readAllWorkedTime() -> [WorkedItem] {
+    static func readAllWorkedTime() -> [WorkedItem] {
         let readAllStatementString = "SELECT * FROM WorkedList"
         var items: [WorkedItem] = []
         var statement: OpaquePointer?
@@ -243,7 +314,7 @@ class WorkedListDB: NSObject {
         sqlite3_finalize(statement)
     }
     
-    func setIdInsertWorkedList() {
+    static func setIdInsertWorkedList() {
         var statement: OpaquePointer?
         
         if sqlite3_prepare(db, idInsertString, -1, &statement, nil) == SQLITE_OK {
@@ -258,7 +329,7 @@ class WorkedListDB: NSObject {
         sqlite3_finalize(statement)
     }
 
-    func deleteWorkedList(id: Date) {
+    static func deleteWorkedList(id: Date) {
         let deleteStatementString = "DELETE FROM WorkedList WHERE Id=\(dbIdFormatter.string(from: id));"
         var statement: OpaquePointer?
         
@@ -274,7 +345,7 @@ class WorkedListDB: NSObject {
         sqlite3_finalize(statement)
     }
     
-    func deleteTableWorkedList() {
+    static func deleteTableWorkedList() {
         let deleteStatementString = "DROP TABLE WorkedList;"
         var statement: OpaquePointer?
         

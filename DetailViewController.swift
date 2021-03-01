@@ -73,11 +73,11 @@ class DetailViewController: UIViewController {
         for i in 0...weekDayNumber {
             let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
             let myDate = Calendar.current.date(from: myDateComponents)!
-            let workedTime = WorkedListDB.readWorkedItem(id: myDate) ?? WorkedItem("--:--", commute: "--:--", offWork: "--:--", rest: 0.0, realWorkedTime: 0.0, workedTime: 0.0, weekDay: 0, dayWorkStatus: 0, spareTimeToWork: 0.0)
+            let workedTime = WorkedListDB.readWorkedItem(id: myDate) ?? WorkedItem("--:--", commute: "--:--", offWork: "--:--", lastAppUse: String(format: "%02d:%02d", datecomponent.hour!, datecomponent.minute!) ,rest: 0.0, realWorkedTime: 0.0, workedTime: 0.0, weekDay: 0, dayWorkStatus: 0, spareTimeToWork: 0.0, isWorking: false)
             
             weekCommuteList[i].text = workedTime.commute
             weekOffWorkList[i].text = workedTime.offWork
-            weekNotWorkList[i].text = String(format: "%02d:%02d", Int(workedTime.rest/3600), Int(workedTime.rest/60) % 60)
+            weekNotWorkList[i].text = String(format: "%02d:%02d:%02d", Int(workedTime.rest/3600), Int(workedTime.rest/60) % 60, Int(workedTime.rest) % 60)
 //            print("rest = \(workedTime.rest) hour = \((workedTime.rest)/3600) min = \((workedTime.rest)/60)")
         }
         for j in weekDayNumber+1..<7 {

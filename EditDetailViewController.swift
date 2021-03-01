@@ -7,6 +7,12 @@
 
 import UIKit
 
+enum Time {
+    case hour
+    case minute
+    case second
+}
+
 class EditDetailViewController: UIViewController {
 
     @IBOutlet var lblPrinted: UILabel!
@@ -35,15 +41,19 @@ class EditDetailViewController: UIViewController {
     var nonWorkFullDay = false
     var nonWorkHalfDay = false
     var workDay = true
+    var txtList = [UITextField]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Init Variable
+        txtList = [txtCommuteHour, txtCommuteMin, txtOffWorkHour, txtOffWorkMin, txtRestHour, txtRestMin]
         
         if let info = InitDB.readInfo() {
             dayLeastHour = info.dayLeastHour
             dayLeastMin = info.dayLeastMin
         }
-        dayLeastTime = TimeInterval(dayLeastHour * 0 + dayLeastMin * 0)
+        dayLeastTime = TimeInterval(dayLeastHour * 3600 + dayLeastMin * 60)
         
         showNameOfWeekDay()
         showPrevWorkItem()
@@ -112,9 +122,9 @@ class EditDetailViewController: UIViewController {
             tempComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: tempDate)
         }
         if let _ = WorkedListDB.readWorkedItem(id: thisDay) {
-            WorkedListDB.updateWorkedTime(id: thisDay, Commute: nil, OffWork: nil, Rest: nil, RealWorkedTime: nil, WorkedTime: nil, WeekDay: nil, DayWorkStatus: statusAfter, spareTimeIfRealTimeIsNil: nil)
+            WorkedListDB.updateWorkedTime(id: thisDay, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: nil, RealWorkedTime: nil, WorkedTime: nil, WeekDay: nil, DayWorkStatus: statusAfter, spareTimeIfRealTimeIsNil: nil, IsWorking: nil)
         } else {
-            _ = WorkedListDB.insertWorkedTime(id: thisDay, Commute: thisDay, OffWork: thisDay, Rest: 0.0, RealWorkedTime: 0.0, WorkedTime: 0.0, WeekDay: thisdayComponent.weekday ?? -1, DayWorkStatus: statusAfter)
+            _ = WorkedListDB.insertWorkedTime(id: thisDay, Commute: thisDay, OffWork: thisDay, LastAppUse: Date(), Rest: 0.0, RealWorkedTime: 0.0, WorkedTime: 0.0, WeekDay: thisdayComponent.weekday ?? -1, DayWorkStatus: statusAfter, IsWorking: false)
         }
         
         if let prevWeekInfo = WeekDB.readWeekInfo(tempDate) {
@@ -156,14 +166,14 @@ class EditDetailViewController: UIViewController {
                     let weekInfo = WeekDB.readWeekInfo(myDate)
                     if weekInfo == nil { print("Error WeekInfo nil #mWSTBS")}
                     let initialWorkTime = info.weekLeastHour * 3600 + info.weekLeastMin * 60 - (weekInfo!.numOfNonWorkFullDay * 8 * 3600 + weekInfo!.numOfNonWorkHalfDay * 4 * 3600)
-                    WorkedListDB.updateWorkedTime(id: myDate, Commute: nil, OffWork: nil, Rest: nil, RealWorkedTime: nil, WorkedTime: nil, WeekDay: nil, DayWorkStatus: myStatus, spareTimeIfRealTimeIsNil: TimeInterval(initialWorkTime) - workedTime.realWorkedTime)
+                    WorkedListDB.updateWorkedTime(id: myDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: nil, RealWorkedTime: nil, WorkedTime: nil, WeekDay: nil, DayWorkStatus: myStatus, spareTimeIfRealTimeIsNil: TimeInterval(initialWorkTime) - workedTime.realWorkedTime, IsWorking: nil)
                 } else {
                     var yesterdayComponent = myDateComponents
                     yesterdayComponent.day = yesterdayComponent.day! - 1
                     let yesterDate = Calendar.current.date(from: yesterdayComponent)!
                     let yesterDateItem = WorkedListDB.readWorkedItem(id: yesterDate)!
                     
-                    WorkedListDB.updateWorkedTime(id: myDate, Commute: nil, OffWork: nil, Rest: nil, RealWorkedTime: nil, WorkedTime: nil, WeekDay: nil, DayWorkStatus: myStatus, spareTimeIfRealTimeIsNil: yesterDateItem.spareTimeToWork - workedTime.realWorkedTime)
+                    WorkedListDB.updateWorkedTime(id: myDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: nil, RealWorkedTime: nil, WorkedTime: nil, WeekDay: nil, DayWorkStatus: myStatus, spareTimeIfRealTimeIsNil: yesterDateItem.spareTimeToWork - workedTime.realWorkedTime, IsWorking: nil)
                 }
             } else {            // DB 에 없는 경우엔, 전날의 SpareTime 을 바탕으로 insert/update 진행하기에 상관 X. 월요일이 없는 경우엔 weekInfo 설정 시 월요일 SpareTime Insert/Update 진행
             }
@@ -181,9 +191,48 @@ class EditDetailViewController: UIViewController {
         } else if nonworkhalfday {
             modifyWorkStatus(thisDay: fromDate, statusBefore: statusbefore, statusAfter: 5)
         } else if workday {
-            // TBD : fromDate의 RealWorkedTime / is today 정보를 확인하여 Status 맞춰 업데이트 해야 함
-            modifyWorkStatus(thisDay: fromDate, statusBefore: statusbefore, statusAfter: 0)
+            var workdayStatusAfter = 0
+            let fromDateComponent = Calendar.current.dateComponents([.year, .month, .day], from: fromDate)
+            let todayDateComponent = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+            if let fromDateWorkedItem = WorkedListDB.readWorkedItem(id: fromDate) {
+                if fromDateComponent.month == todayDateComponent.month && fromDateComponent.day == todayDateComponent.day {     // 오늘에 대해 근로로 Edit
+                    workdayStatusAfter = 1
+                } else {
+                    let info = InitDB.readInfo()!
+                    let commuteArr = fromDateWorkedItem.commute.split(separator: ":")
+                    if fromDateWorkedItem.realWorkedTime >= TimeInterval(info.dayGoalHour * 3600 + info.dayGoalMin * 60) {
+                        workdayStatusAfter = 3
+                    } else if fromDateWorkedItem.realWorkedTime >= TimeInterval(info.dayLeastHour * 3600 + info.dayLeastMin * 60) {
+                        workdayStatusAfter = 2
+                    } else if (Int(commuteArr[0])! * 60 + Int(commuteArr[1])!) > (info.dayLeastStartHour * 60 + info.dayLeastStartMin){
+                        workdayStatusAfter = 7
+                    } else { workdayStatusAfter = 6 }
+                }
+            } else {
+                workdayStatusAfter = 0
+            }
+            modifyWorkStatus(thisDay: fromDate, statusBefore: statusbefore, statusAfter: workdayStatusAfter)
         }
+    }
+    
+    func isInValidWorkedTime(timeValue: Int?, kindOfTime: Time) -> Bool {
+        if let tV = timeValue {
+            switch kindOfTime {
+            case .hour:
+                if tV >= 0 && tV <= 23 {
+                    return false
+                }
+            case .minute:
+                if tV >= 0 && tV <= 59 {
+                    return false
+                }
+            case .second:
+                if tV >= 0 && tV <= 59 {
+                    return false
+                }
+            }
+        }
+        return true
     }
     
     @IBAction func btnActNonFullDayWork(_ sender: UIButton) {
@@ -219,7 +268,30 @@ class EditDetailViewController: UIViewController {
         changeWorkStatus(nonworkfullday: nonWorkFullDay, nonworkhalfday: nonWorkHalfDay, workday: workDay)
     }
     
-    @IBAction func btnEditComplete(_ sender: UIButton) { // TBD : Commute Time < OffWork Time 의 조건 필요
+    @IBAction func btnEditComplete(_ sender: UIButton) {
+        for txt in txtList {
+            if let writtenTime = txt.text {
+                if writtenTime == "" { txt.text = "00"}
+                else {
+                    if Int(writtenTime) == nil {
+                        present(BasicOperation.AlertWrongInput(WrongInputEnum: .notnumberinput), animated: true, completion: nil)
+                        return          // 숫자 입력 하지 않을 시, btnEditComplete 함수 종료 (변경사항 적용 X)
+                    }
+                }
+            } else {
+                txt.text = "00"
+            }
+        }
+        let commuteTimeMinute = Int(txtCommuteHour.text!)! * 60 + Int(txtCommuteMin.text!)!
+        let offworkTimeMinute = Int(txtOffWorkHour.text!)! * 60 + Int(txtOffWorkMin.text!)!
+        if commuteTimeMinute > offworkTimeMinute
+            || isInValidWorkedTime(timeValue: Int(txtCommuteHour.text!)!, kindOfTime: .hour)
+            || isInValidWorkedTime(timeValue: Int(txtCommuteMin.text!)!, kindOfTime: .minute)
+            || isInValidWorkedTime(timeValue: Int(txtOffWorkHour.text!)!, kindOfTime: .hour)
+            || isInValidWorkedTime(timeValue: Int(txtOffWorkMin.text!)!, kindOfTime: .minute) {
+            present(BasicOperation.AlertWrongInput(WrongInputEnum: .wrongworktimeinput), animated: true, completion: nil)
+            return                      // 출근시간이 퇴근시간보다 늦을 경우, btnEditComplete 함수 종료 (변경사항 적용 X)
+        }
         if let prevWorkedItem = WorkedListDB.readWorkedItem(id: fromDate) {
             let CommuteComponent = DateComponents(hour: Int(txtCommuteHour.text!), minute: Int(txtCommuteMin.text!) )
             let CommuteDate = Calendar.current.date(from: CommuteComponent)!
@@ -233,7 +305,7 @@ class EditDetailViewController: UIViewController {
             var dayWorkStatus = prevWorkedItem.dayWorkStatus
             
             if workDay {
-                if realWorkTime >= dayLeastTime {       // TBD : 날짜가 오늘인 경우, dayWorkStatus '1'로 설정해야 한다.
+                if realWorkTime >= dayLeastTime {
                     dayWorkStatus = 2 /* 정상 출근 완료 */
                 }
                 
@@ -245,7 +317,7 @@ class EditDetailViewController: UIViewController {
                 dayWorkStatus = 5
             }
             
-            WorkedListDB.updateWorkedTime(id: fromDate, Commute: CommuteDate, OffWork: OffWorkDate, Rest: TimeInterval(restTimeInt), RealWorkedTime: realWorkTime, WorkedTime: TimeInterval(workTime), WeekDay: prevWorkedItem.weekDay, DayWorkStatus: dayWorkStatus, spareTimeIfRealTimeIsNil: nil)
+            WorkedListDB.updateWorkedTime(id: fromDate, Commute: CommuteDate, OffWork: OffWorkDate, LastAppUse: Date(), Rest: TimeInterval(restTimeInt), RealWorkedTime: realWorkTime, WorkedTime: TimeInterval(workTime), WeekDay: prevWorkedItem.weekDay, DayWorkStatus: dayWorkStatus, spareTimeIfRealTimeIsNil: nil, IsWorking: nil)
             
         } else {
             let nonExistItemAlert = UIAlertController(title: "경고", message: "출근 기록이 존재하지 않습니다", preferredStyle: UIAlertController.Style.alert)
@@ -266,7 +338,7 @@ class EditDetailViewController: UIViewController {
                 }
                 
                 self.lblRealWorkTime.text = String(format: "%02d : %02d", realWorkHour, realWorkMin)
-                _ = WorkedListDB.insertWorkedTime(id: self.fromDate, Commute: CommuteDate, OffWork: OffWorkDate, Rest: TimeInterval(restTimeInt), RealWorkedTime: realWorkTime, WorkedTime: TimeInterval(workTime), WeekDay: self.fromWeekDay, DayWorkStatus: dayWorkStatus)
+                _ = WorkedListDB.insertWorkedTime(id: self.fromDate, Commute: CommuteDate, OffWork: OffWorkDate, LastAppUse: Date(), Rest: TimeInterval(restTimeInt), RealWorkedTime: realWorkTime, WorkedTime: TimeInterval(workTime), WeekDay: self.fromWeekDay, DayWorkStatus: dayWorkStatus, IsWorking: false)
             })
             let noEditAction = UIAlertAction(title: "수정하지 않겠습니다", style: UIAlertAction.Style.default, handler: nil)
             nonExistItemAlert.addAction(yesEditAction)

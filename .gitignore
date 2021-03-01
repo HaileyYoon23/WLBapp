@@ -30,6 +30,9 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 
+# Resources
+Resources/
+
 ## Playgrounds
 timeline.xctimeline
 playground.xcworkspace
@@ -88,3 +91,67 @@ fastlane/test_output
 # https://github.com/johnno1962/injectionforxcode
 
 iOSInjectionProject/
+Resources/제목_없는_아트워크 10.png
+Resources/제목_없는_아트워크 11.png
+Resources/제목_없는_아트워크 12.png
+Resources/제목_없는_아트워크 13.png
+Resources/제목_없는_아트워크 14.png
+Resources/제목_없는_아트워크 15.png
+Resources/제목_없는_아트워크 16.png
+Resources/제목_없는_아트워크 17.png
+Resources/제목_없는_아트워크 18.png
+Resources/제목_없는_아트워크 19.png
+Resources/제목_없는_아트워크 2.png
+Resources/제목_없는_아트워크 20.png
+Resources/제목_없는_아트워크 21.png
+Resources/제목_없는_아트워크 22.png
+Resources/제목_없는_아트워크 23.png
+Resources/제목_없는_아트워크 24.png
+Resources/제목_없는_아트워크 25.png
+Resources/제목_없는_아트워크 26.png
+Resources/제목_없는_아트워크 27.png
+Resources/제목_없는_아트워크 28.png
+Resources/제목_없는_아트워크 29.png
+Resources/제목_없는_아트워크 3.png
+Resources/제목_없는_아트워크 30.png
+Resources/제목_없는_아트워크 31.png
+Resources/제목_없는_아트워크 32.png
+Resources/제목_없는_아트워크 33.png
+Resources/제목_없는_아트워크 34.png
+Resources/제목_없는_아트워크 35.png
+Resources/제목_없는_아트워크 36.png
+Resources/제목_없는_아트워크 37.png
+Resources/제목_없는_아트워크 38.png
+Resources/제목_없는_아트워크 39.png
+Resources/제목_없는_아트워크 4.png
+Resources/제목_없는_아트워크 40.png
+Resources/제목_없는_아트워크 41.png
+Resources/제목_없는_아트워크 42.png
+Resources/제목_없는_아트워크 43.png
+Resources/제목_없는_아트워크 44.png
+Resources/제목_없는_아트워크 45.png
+Resources/제목_없는_아트워크 46.png
+Resources/제목_없는_아트워크 47.png
+Resources/제목_없는_아트워크 48.png
+Resources/제목_없는_아트워크 49.png
+Resources/제목_없는_아트워크 5.png
+Resources/제목_없는_아트워크 50.png
+Resources/제목_없는_아트워크 51.png
+Resources/제목_없는_아트워크 52.png
+Resources/제목_없는_아트워크 53.png
+Resources/제목_없는_아트워크 54.png
+Resources/제목_없는_아트워크 55.png
+Resources/제목_없는_아트워크 56.png
+Resources/제목_없는_아트워크 57.png
+Resources/제목_없는_아트워크 58.png
+Resources/제목_없는_아트워크 59.png
+Resources/제목_없는_아트워크 6.png
+Resources/제목_없는_아트워크 60.png
+Resources/제목_없는_아트워크 61.png
+Resources/제목_없는_아트워크 62.png
+Resources/제목_없는_아트워크 7.png
+Resources/제목_없는_아트워크 8.png
+Resources/제목_없는_아트워크 9.png
+Resources/제목_없는_아트워크 10.png
+*.png
+*.png

@@ -22,12 +22,14 @@ let createTableString = """
    Id CHAR(255) PRIMARY KEY NOT NULL,
    Commute CHAR(255),
    OffWork CHAR(255),
+   LastAppUse CHAR(255),
    Rest Int,
    RealWorkedTime Int,
    WorkedTime Int,
    WeekDay Int,
    DayWorkStatus Int,
-   SpareTimeToWork Int);
+   SpareTimeToWork Int,
+   IsWorking Int);
    """
 
 let idInsertString = "SET IDENTITY_INSERT WorkedList ON;"
@@ -36,29 +38,33 @@ class WorkedItem {
     var workedDate: String
     var commute: String
     var offWork: String
+    var lastAppUse: String
     var rest: TimeInterval
     var realWorkedTime: TimeInterval
     var workedTime: TimeInterval
     var weekDay: Int
     var dayWorkStatus: Int
     var spareTimeToWork: TimeInterval
+    var isWorking: Bool
     
-    init(_ workedDate: String, commute: String, offWork: String, rest: TimeInterval, realWorkedTime: TimeInterval, workedTime: TimeInterval, weekDay: Int, dayWorkStatus: Int, spareTimeToWork: TimeInterval) {
+    init(_ workedDate: String, commute: String, offWork: String, lastAppUse: String, rest: TimeInterval, realWorkedTime: TimeInterval, workedTime: TimeInterval, weekDay: Int, dayWorkStatus: Int, spareTimeToWork: TimeInterval, isWorking: Bool) {
         self.workedDate = workedDate
         self.commute = commute
         self.offWork = offWork
+        self.lastAppUse = lastAppUse
         self.rest = rest
         self.realWorkedTime = realWorkedTime
         self.workedTime = workedTime
         self.weekDay = weekDay
         self.dayWorkStatus = dayWorkStatus
         self.spareTimeToWork = spareTimeToWork
+        self.isWorking = isWorking
     }
 }
 
 class WorkedListDB: NSObject {
     override init() {
-        dbFormatter.dateFormat = "HH:mm"
+        dbFormatter.dateFormat = "HH:mm:ss"
         dbIdFormatter.dateFormat = "yyyy.MM.dd"
         if sqlite3_open(path, &db) == SQLITE_OK {
             if sqlite3_exec(db,createTableString,nil,nil,nil) == SQLITE_OK {
@@ -87,8 +93,8 @@ class WorkedListDB: NSObject {
       sqlite3_finalize(createTableStatement)
     }
     
-    static func insertWorkedTime(id: Date, Commute: Date, OffWork: Date, Rest: TimeInterval, RealWorkedTime: TimeInterval, WorkedTime: TimeInterval, WeekDay: Int, DayWorkStatus: Int) -> Int {
-        let insertStatementString = "INSERT INTO WorkedList (Id, Commute, OffWork, Rest, RealWorkedTime, WorkedTime, WeekDay, DayWorkStatus, SpareTimeToWork) VALUES (?,?,?,?,?,?,?,?,?);"
+    static func insertWorkedTime(id: Date, Commute: Date, OffWork: Date, LastAppUse: Date, Rest: TimeInterval, RealWorkedTime: TimeInterval, WorkedTime: TimeInterval, WeekDay: Int, DayWorkStatus: Int, IsWorking: Bool) -> Int {
+        let insertStatementString = "INSERT INTO WorkedList (Id, Commute, OffWork, LastAppUse, Rest, RealWorkedTime, WorkedTime, WeekDay, DayWorkStatus, SpareTimeToWork, IsWorking) VALUES (?,?,?,?,?,?,?,?,?,?,?);"
         var statement: OpaquePointer?
         
         if sqlite3_prepare(db, insertStatementString, -1, &statement, nil) == SQLITE_OK {       // 쿼리 생성
@@ -96,24 +102,27 @@ class WorkedListDB: NSObject {
             sqlite3_bind_text(statement, 2, dbFormatter.string(from: Commute), -1, SQLITE_TRANSIENT)
             //  두번째 매개변수는  (?,?,?,?) 에 대해 각 인덱스의 값을 넣어주는 역할
             sqlite3_bind_text(statement, 3, dbFormatter.string(from: OffWork), -1, SQLITE_TRANSIENT)
-            sqlite3_bind_int(statement, 4, Int32(Rest))
-            sqlite3_bind_int(statement, 5, Int32(RealWorkedTime))
-            sqlite3_bind_int(statement, 6, Int32(WorkedTime))
-            sqlite3_bind_int(statement, 7, Int32(WeekDay))
-            sqlite3_bind_int(statement, 8, Int32(DayWorkStatus))
+            sqlite3_bind_text(statement, 4, dbFormatter.string(from: LastAppUse), -1, SQLITE_TRANSIENT)
+            sqlite3_bind_int(statement, 5, Int32(Rest))
+            sqlite3_bind_int(statement, 6, Int32(RealWorkedTime))
+            sqlite3_bind_int(statement, 7, Int32(WorkedTime))
+            sqlite3_bind_int(statement, 8, Int32(WeekDay))
+            sqlite3_bind_int(statement, 9, Int32(DayWorkStatus))
             if WeekDay == 2 {
                 let info = InitDB.readInfo()!
                 let weekInfo = WeekDB.readWeekInfo(id)
                 if weekInfo == nil { print("Error WeekInfo nil")}
                 let initialWorkTime = info.weekLeastHour * 3600 + info.weekLeastMin * 60 - (weekInfo!.numOfNonWorkFullDay * 8 * 3600 + weekInfo!.numOfNonWorkHalfDay * 4 * 3600)
-                sqlite3_bind_int(statement, 9, Int32(initialWorkTime))
+                sqlite3_bind_int(statement, 10, Int32(initialWorkTime))
             } else {
                 var myDateComponents = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: id)
                 myDateComponents.day = myDateComponents.day! - 1
                 let yesterDate = Calendar.current.date(from: myDateComponents)!
                 let yesterDateItem = WorkedListDB.readWorkedItem(id: yesterDate)!
-                sqlite3_bind_int(statement, 9, Int32(yesterDateItem.spareTimeToWork))
+                sqlite3_bind_int(statement, 10, Int32(yesterDateItem.spareTimeToWork))
             }
+            
+            sqlite3_bind_int(statement, 11, Int32(IsWorking ? 1 : 0))
             
             if sqlite3_step(statement) == SQLITE_DONE {         // 쿼리 실행
 //                print("DB Insert Row Success\n")
@@ -128,7 +137,7 @@ class WorkedListDB: NSObject {
         return Int(sqlite3_last_insert_rowid(db))
     }
     
-    static func updateWorkedTime(id: Date, Commute: Date?, OffWork: Date?, Rest: TimeInterval?, RealWorkedTime: TimeInterval?, WorkedTime: TimeInterval?, WeekDay: Int?, DayWorkStatus: Int?, spareTimeIfRealTimeIsNil: TimeInterval?) {
+    static func updateWorkedTime(id: Date, Commute: Date?, OffWork: Date?, LastAppUse: Date, Rest: TimeInterval?, RealWorkedTime: TimeInterval?, WorkedTime: TimeInterval?, WeekDay: Int?, DayWorkStatus: Int?, spareTimeIfRealTimeIsNil: TimeInterval?, IsWorking: Bool?) {
         let spareTime: TimeInterval
         
         var updateStatementString = "UPDATE WorkedList SET "
@@ -144,6 +153,11 @@ class WorkedListDB: NSObject {
             updateStatementString += "OffWork = '\(dbFormatter.string(from: OffWork!))'"
             prevStatementExist = true
         }
+        if prevStatementExist {
+            updateStatementString += ", "
+        }
+        updateStatementString += "LastAppUse = '\(dbFormatter.string(from: LastAppUse))'"
+        prevStatementExist = true
         if let rest = Rest {
             if prevStatementExist {
                 updateStatementString += ", "
@@ -210,9 +224,18 @@ class WorkedListDB: NSObject {
             } else {
 //                present(BasicOperation.AlertToManage(errorCode: "SpareTimeRealTimeBothNil"), animated: true, completion: nil)
                 // TBD : need to show Error
-                // print("Error Code: pareTimeRealTimeBothNil" )
+//                print("Error Code: spareTimeRealTimeBothNil" )
             }
         }
+        
+        if let isworking = IsWorking {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "IsWorking = \(isworking ? 1 : 0)"
+            prevStatementExist = true
+        }
+        
         updateStatementString += " WHERE Id = '\(dbIdFormatter.string(from: id))';"
         
         var statement: OpaquePointer?
@@ -245,14 +268,18 @@ class WorkedListDB: NSObject {
                 guard let offWork = sqlite3_column_text(statement, 2) else {
                     return nil
                 }
-                let rest = sqlite3_column_int(statement, 3)
-                let realWorkedTime = sqlite3_column_int(statement, 4)
-                let workedTime = sqlite3_column_int(statement, 5)
-                let weekDay = sqlite3_column_int(statement, 6)
-                let dayWorkStatus = sqlite3_column_int(statement, 7)
-                let spareTimeToWork = sqlite3_column_int(statement, 8)
+                guard let lastAppUse = sqlite3_column_text(statement, 3) else {
+                    return nil
+                }
+                let rest = sqlite3_column_int(statement, 4)
+                let realWorkedTime = sqlite3_column_int(statement, 5)
+                let workedTime = sqlite3_column_int(statement, 6)
+                let weekDay = sqlite3_column_int(statement, 7)
+                let dayWorkStatus = sqlite3_column_int(statement, 8)
+                let spareTimeToWork = sqlite3_column_int(statement, 9)
+                let isworking = sqlite3_column_int(statement, 10)
                 
-                let workedItem = WorkedItem(String(cString: idWorkedDate), commute: String(cString: commute), offWork: String(cString: offWork), rest: TimeInterval(rest), realWorkedTime: TimeInterval(realWorkedTime), workedTime: TimeInterval(workedTime), weekDay: Int(weekDay), dayWorkStatus: Int(dayWorkStatus), spareTimeToWork: TimeInterval(spareTimeToWork))
+                let workedItem = WorkedItem(String(cString: idWorkedDate), commute: String(cString: commute), offWork: String(cString: offWork), lastAppUse: String(cString: lastAppUse), rest: TimeInterval(rest), realWorkedTime: TimeInterval(realWorkedTime), workedTime: TimeInterval(workedTime), weekDay: Int(weekDay), dayWorkStatus: Int(dayWorkStatus), spareTimeToWork: TimeInterval(spareTimeToWork), isWorking: ((isworking == 1) ? true : false))
                 item = workedItem
             }
         } else {
@@ -279,14 +306,18 @@ class WorkedListDB: NSObject {
                 guard let offWork = sqlite3_column_text(statement, 2) else {
                     continue
                 }
-                let rest = sqlite3_column_int(statement, 3)
-                let realWorkedTime = sqlite3_column_int(statement, 4)
-                let workedTime = sqlite3_column_int(statement, 5)
-                let weekDay = sqlite3_column_int(statement, 6)
-                let dayWorkStatus = sqlite3_column_int(statement, 7)
-                let spareTimeToWork = sqlite3_column_int(statement, 8)
+                guard let lastAppUse = sqlite3_column_text(statement, 3) else {
+                    continue
+                }
+                let rest = sqlite3_column_int(statement, 4)
+                let realWorkedTime = sqlite3_column_int(statement, 5)
+                let workedTime = sqlite3_column_int(statement, 6)
+                let weekDay = sqlite3_column_int(statement, 7)
+                let dayWorkStatus = sqlite3_column_int(statement, 8)
+                let spareTimeToWork = sqlite3_column_int(statement, 9)
+                let isworking = sqlite3_column_int(statement, 10)
                 
-                let workedItem = WorkedItem(String(cString: idWorkedDate), commute: String(cString: commute), offWork: String(cString: offWork), rest: TimeInterval(rest), realWorkedTime: TimeInterval(realWorkedTime), workedTime: TimeInterval(workedTime), weekDay: Int(weekDay), dayWorkStatus: Int(dayWorkStatus), spareTimeToWork: TimeInterval(spareTimeToWork))
+                let workedItem = WorkedItem(String(cString: idWorkedDate), commute: String(cString: commute), offWork: String(cString: offWork), lastAppUse: String(cString: lastAppUse), rest: TimeInterval(rest), realWorkedTime: TimeInterval(realWorkedTime), workedTime: TimeInterval(workedTime), weekDay: Int(weekDay), dayWorkStatus: Int(dayWorkStatus), spareTimeToWork: TimeInterval(spareTimeToWork), isWorking: ((isworking == 1) ? true : false))
                 items.append(workedItem)
             }
         } else {

@@ -137,7 +137,7 @@ class WorkedListDB: NSObject {
         return Int(sqlite3_last_insert_rowid(db))
     }
     
-    static func updateWorkedTime(id: Date, Commute: Date?, OffWork: Date?, LastAppUse: Date, Rest: TimeInterval?, RealWorkedTime: TimeInterval?, WorkedTime: TimeInterval?, WeekDay: Int?, DayWorkStatus: Int?, spareTimeIfRealTimeIsNil: TimeInterval?, IsWorking: Bool?) {
+    static func updateWorkedTime(id: Date, Commute: Date?, OffWork: Date?, LastAppUse: Date?, Rest: TimeInterval?, RealWorkedTime: TimeInterval?, WorkedTime: TimeInterval?, WeekDay: Int?, DayWorkStatus: Int?, spareTimeIfRealTimeIsNil: TimeInterval?, IsWorking: Bool?) {
         let spareTime: TimeInterval
         
         var updateStatementString = "UPDATE WorkedList SET "
@@ -153,11 +153,13 @@ class WorkedListDB: NSObject {
             updateStatementString += "OffWork = '\(dbFormatter.string(from: OffWork!))'"
             prevStatementExist = true
         }
-        if prevStatementExist {
-            updateStatementString += ", "
+        if let _ = LastAppUse {
+            if prevStatementExist {
+                updateStatementString += ", "
+            }
+            updateStatementString += "LastAppUse = '\(dbFormatter.string(from: LastAppUse!))'"
+            prevStatementExist = true
         }
-        updateStatementString += "LastAppUse = '\(dbFormatter.string(from: LastAppUse))'"
-        prevStatementExist = true
         if let rest = Rest {
             if prevStatementExist {
                 updateStatementString += ", "

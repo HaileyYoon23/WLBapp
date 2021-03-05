@@ -7,6 +7,10 @@
 
 import UIKit
 
+
+
+
+
 class ViewController: UIViewController {
     
     // Macro
@@ -23,13 +27,13 @@ class ViewController: UIViewController {
     @IBOutlet var lblSat: UILabel!
     @IBOutlet var lblSun: UILabel!
     @IBOutlet var lblCurrentTime: UILabel!
-    @IBOutlet var lblWorkState: UILabel!
     @IBOutlet var lblWorkingTime: UILabel!
     @IBOutlet var lblBigWorkingTime: UILabel!
     @IBOutlet var lblCommuteTime: UILabel!
     @IBOutlet var lblOffWorkPossibleTime: UILabel!
     @IBOutlet var lblButtonMessage: UILabel!
     @IBOutlet var ImgView: UIImageView!
+    @IBOutlet var btnReset: UIButton!
     
     // List Of Outlet
     var lblWeekDayList: [UILabel] = []
@@ -80,6 +84,7 @@ class ViewController: UIViewController {
     
     var dayLeastWorkTime: TimeInterval = -1
     var dayGoalWorkTime: TimeInterval = -1
+    var dayLeastStartTime: TimeInterval = -1
     
     // Debug Variable
     var debugNextDays: Int = 1
@@ -109,6 +114,9 @@ class ViewController: UIViewController {
         lblSat.textColor = UIColor.white
         lblSun.textColor = UIColor.white
         lblCurrentTime.textColor = UIColor.white
+        btnReset.tintColor = UIColor.white
+//        lblBigWorkingTime.dynamicFont(fontSize: 88, weight: .medium)
+//        lblWorkingTime.dynamicFont(fontSize: 25, weight: .medium)
         
         // Debug Memory Initialization
 //        DBMemory.setIdInsertWorkedList()
@@ -123,23 +131,12 @@ class ViewController: UIViewController {
         todayDate = Date()
         lblDateInfo.text = entireFormat.string(from: todayDate)
         todayComponent = todayCalendar.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: todayDate)
-        lblDateInfo2.text = "\(todayComponent.month ?? errorValue)월 \(todayComponent.weekOfMonth ?? errorValue)째주, 출근 \((todayComponent.weekday ?? errorValue) - 1)일 째"
-        lblCurrentTime.text = convertSimpleFormatToPMAMTime(todayComponent)
+        lblDateInfo2.text = "\(todayComponent.month ?? errorValue)월 \(todayComponent.weekOfMonth ?? errorValue)째주"//, 출근 \((todayComponent.weekday ?? errorValue) - 1)일 째"
+        lblCurrentTime.text = convertSimpleFormatToPMAMTime(todayComponent.hour, minute: todayComponent.minute)
         
         // Init Info 불러오기 from DB
         initDBs()
-        let initInfo = InitDB.readInfo()
-        weekLeastHour = initInfo?.weekLeastHour ?? 40
-        weekLeastMin = initInfo?.weekLeastMin ?? 0
-        dayGoalHour = initInfo?.dayGoalHour ?? 8
-        dayGoalMin = initInfo?.dayGoalMin ?? 0
-        dayLeastHour = initInfo?.dayLeastHour ?? 4
-        dayLeastMin = initInfo?.dayLeastMin ?? 0
-        dayLeastStartHour = initInfo?.dayLeastStartHour ?? 15
-        dayLeastStartMin = initInfo?.dayLeastStartMin ?? 0
-        
-        dayLeastWorkTime = Double((dayLeastHour * 3600) + (dayLeastMin * 60))
-        dayGoalWorkTime = Double((dayGoalHour * 3600) + (dayGoalMin * 60))
+        refreshDBs()
         
         _ = Timer.scheduledTimer(timeInterval: timeInterval, target: self, selector: curSelector, userInfo: nil, repeats: true)
         
@@ -209,7 +206,6 @@ class ViewController: UIViewController {
             
             let commuteArr = prevTodayWorkItem.commute.split(separator: ":")
             let commuteComponent = DateComponents(hour: Int(commuteArr[0])!, minute: Int(commuteArr[1])!, second: Int(commuteArr[2])!)
-            lblCommuteTime.text = convertSimpleFormatToPMAMTime(commuteComponent)
             
         } else {
             isWorking = false
@@ -217,19 +213,38 @@ class ViewController: UIViewController {
         }
     }
     
+    func refreshDBs() {
+        let initInfo = InitDB.readInfo()
+        weekLeastHour = initInfo?.weekLeastHour ?? 40
+        weekLeastMin = initInfo?.weekLeastMin ?? 0
+        dayGoalHour = initInfo?.dayGoalHour ?? 8
+        dayGoalMin = initInfo?.dayGoalMin ?? 0
+        dayLeastHour = initInfo?.dayLeastHour ?? 4
+        dayLeastMin = initInfo?.dayLeastMin ?? 0
+        dayLeastStartHour = initInfo?.dayLeastStartHour ?? 15
+        dayLeastStartMin = initInfo?.dayLeastStartMin ?? 0
+        
+        dayLeastWorkTime = Double((dayLeastHour * 3600) + (dayLeastMin * 60))
+        dayGoalWorkTime = Double((dayGoalHour * 3600) + (dayGoalMin * 60))
+        dayLeastStartTime = Double((dayLeastStartHour * 3600) + (dayLeastStartMin * 60))
+        
+    }
+    
     func makeThisWeekDayWorkedTime(){
         let myDateComponents = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: Date())
         if var todayWeekDay = myDateComponents.weekday {
             todayWeekDay = (todayWeekDay + 5) % 7
-            if todayWeekDay <= 0 { return }
+            if todayWeekDay <= 0 { return }     // 월요일
             for i in 0..<todayWeekDay {         // 월요일부터 update 하기 시작
-                let yesterDateComponent = DateComponents(year: myDateComponents.year, month: myDateComponents.month, day: myDateComponents.day! - (todayWeekDay - i), weekday: i)
+                var yesterDateComponent = DateComponents(year: myDateComponents.year, month: myDateComponents.month, day: myDateComponents.day! - (todayWeekDay - i), weekday: i)
                 let yesterDate = Calendar.current.date(from: yesterDateComponent)!
+                yesterDateComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: yesterDate)
                 let yesterdayWorkedTime = WorkedListDB.readWorkedItem(id: yesterDate)
                 if yesterdayWorkedTime == nil {
-                    _ = WorkedListDB.insertWorkedTime(id: yesterDate, Commute: yesterDate, OffWork: yesterDate, LastAppUse: Date(), Rest: 0.0, RealWorkedTime: 0.0, WorkedTime: 0.0, WeekDay: yesterDateComponent.weekday ?? -1, DayWorkStatus: 6 /*근태 수정 필요*/, IsWorking: false)
+                    _ = WorkedListDB.insertWorkedTime(id: yesterDate, Commute: yesterDate, OffWork: yesterDate, LastAppUse: Date(), Rest: 0.0, RealWorkedTime: 0.0, WorkedTime: 0.0, WeekDay: yesterDateComponent.weekday!, DayWorkStatus: 6 /*근태 수정 필요*/, IsWorking: false)
                 } else {
-                    if yesterdayWorkedTime!.realWorkedTime <= dayLeastWorkTime {
+                    if yesterdayWorkedTime!.realWorkedTime <= dayLeastWorkTime
+                        && (yesterdayWorkedTime!.dayWorkStatus == 0 || yesterdayWorkedTime!.dayWorkStatus == 1) {
                         WorkedListDB.updateWorkedTime(id: yesterDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: yesterdayWorkedTime!.rest, RealWorkedTime: yesterdayWorkedTime!.realWorkedTime, WorkedTime: yesterdayWorkedTime!.workedTime, WeekDay: yesterdayWorkedTime!.weekDay, DayWorkStatus: 6 /* 근태 수정 필요 */, spareTimeIfRealTimeIsNil: nil, IsWorking: false)
                     }
                 }
@@ -242,7 +257,8 @@ class ViewController: UIViewController {
         if let workItem = WorkedListDB.readWorkedItem(id: Date()) {
             percentage = Int(((workItem.realWorkedTime) / (dayGoalWorkTime)) * 60) + 2
         }
-        var imageName =  "제목_없는_아트워크 \(percentage).png"
+        if percentage > 62 { percentage = 63 }
+        let imageName =  "제목_없는_아트워크 \(percentage).png"
         
         if isWorking {
             ImgView.image = UIImage(named: imageName)
@@ -252,21 +268,24 @@ class ViewController: UIViewController {
     }
     
     
-    func convertSimpleFormatToPMAMTime(_ timeComponent: DateComponents) -> String {
-        var resultTime: String
-        var hour: Int = timeComponent.hour ?? -1
-        let minute: Int = timeComponent.minute ?? -1
-        let PMorAM: String = (hour >= 12 ? "PM" : "AM")
-        
+    func convertSimpleFormatToPMAMTime(_ hour: Int?, minute: Int?) -> String {
         todayDate = Date()
         todayComponent = todayCalendar.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: todayDate)
         
-        hour %= 12
-        if hour == 0 {
-            hour = 12
+        if hour == nil || minute == nil {
+            return "--  -- : --"
+        } else {
+            var h = hour!
+            let m = minute!
+            var resultTime: String
+            let PMorAM: String = (h >= 12 ? "PM" : "AM")
+            h %= 12
+            if h == 0 {
+                h = 12
+            }
+            resultTime = PMorAM + String(format: " %02d : %02d", h, m) //"\(PMorAM) \(hour) : \(minute)"
+            return resultTime
         }
-        resultTime = PMorAM + String(format: " %02d : %02d", hour, minute) //"\(PMorAM) \(hour) : \(minute)"
-        return resultTime
     }
     func convertNSTimeInterval2String(_ time: TimeInterval, isBigOne: Bool) -> String {
         ViewController.realWorkedTime = time
@@ -319,6 +338,20 @@ class ViewController: UIViewController {
         } else {        // 평일 목표 근무 시간 8시간 30분
             goalMin = info!.dayGoalMin
             goalHour = info!.dayGoalHour
+            var dayGoalTimeMin = goalHour * 60 + goalMin
+            switch dayGoalTimeMin {
+            case 0...240:
+                break
+            case 241...480:
+                dayGoalTimeMin += 30
+                goalHour = (dayGoalTimeMin) / 60
+                goalMin = (dayGoalTimeMin) %
+                60
+            default:
+                dayGoalTimeMin += 60
+                goalHour /= 60
+                goalMin %= 60
+            }
         }
         var sec, min, hour : Int
         if let workedItem = WorkedListDB.readWorkedItem(id: Date()){
@@ -353,16 +386,16 @@ class ViewController: UIViewController {
         
         // App.을 사용하지 않는 동안 Time Count가 되지 않으면서 제대로 update 이루어지지 않고 있음
         if let prevWorkedItem = WorkedListDB.readWorkedItem(id: commuteDate) {
-            ViewController.notWorkedTime = prevWorkedItem.rest
+            let lastUpdateArr = prevWorkedItem.lastAppUse.split(separator: ":")
+            let timeInt = (todayComponent.hour! * 3600 + todayComponent.minute! * 60 + todayComponent.second!) - (Int(lastUpdateArr[0])! * 3600 + Int(lastUpdateArr[1])! * 60 + Int(lastUpdateArr[2])!)
+            ViewController.notWorkedTime = prevWorkedItem.rest + TimeInterval(timeInt)
             ViewController.realWorkedTime = prevWorkedItem.realWorkedTime
             ViewController.workedTime = prevWorkedItem.workedTime
             WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: commuteDate, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: nil, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
             let commuteTime = prevWorkedItem.commute.split(separator: ":", maxSplits: 2, omittingEmptySubsequences: false)
             commuteComponent = DateComponents(year: commuteComponent.year, month: commuteComponent.month, day: commuteComponent.day! + debugNextDays - 1, hour: Int(commuteTime[0]), minute: Int(commuteTime[1]))
-            lblCommuteTime.text = convertSimpleFormatToPMAMTime(commuteComponent)
         } else {
             _ = WorkedListDB.insertWorkedTime(id: commuteDate, Commute: commuteDate, OffWork: commuteDate, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: 1, IsWorking: isWorking)
-            lblCommuteTime.text = convertSimpleFormatToPMAMTime(commuteComponent)
             InitDB.updateInfo(weekLeastHour: nil, weekLeastMin: nil, dayGoalHour: nil, dayGoalMin: nil, dayLeastHour: nil, dayLeastMin: nil, dayLeastStartHour: nil, dayLeastStartMin: nil, lastUpdatedDate: commuteDate)
             isCommute = true
         }
@@ -385,7 +418,6 @@ class ViewController: UIViewController {
             WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: commuteComponent.weekday!, DayWorkStatus: nil, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
             let commuteTime = prevWorkedItem.commute.split(separator: ":", maxSplits: 2, omittingEmptySubsequences: false)
             commuteComponent = DateComponents(year: commuteComponent.year, month: commuteComponent.month, day: commuteComponent.day! + debugNextDays - 1, hour: Int(commuteTime[0]), minute: Int(commuteTime[1]))
-            lblCommuteTime.text = convertSimpleFormatToPMAMTime(commuteComponent)
         }
         notWorkingTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: notWorkTimeSelector, userInfo: nil, repeats: true)
         lblButtonMessage.text = "클릭 시 출근!"
@@ -428,14 +460,26 @@ class ViewController: UIViewController {
         }
     }
     
-    func updateDayWorkStatus() -> Bool {
+    func updateDayWorkStatus(checkToday: Bool) -> Bool {
         var result: Bool = false
-        if ViewController.realWorkedTime >= dayGoalWorkTime {
-            WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 3 /* 야근 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-            result = true
-        } else if ViewController.realWorkedTime >= dayLeastWorkTime {
-            WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 2 /* 정상 출근 완료 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-            result = true
+        
+        if let todayItem = WorkedListDB.readWorkedItem(id: Date()) {
+            let commuteArr = todayItem.commute.split(separator: ":")
+            let commuteTimeInterval = TimeInterval(Int(commuteArr[0])! * 3600 + Int(commuteArr[1])! * 60 + Int(commuteArr[2])!)
+            if commuteTimeInterval > dayLeastStartTime {
+                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 7 /* 지각 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
+                result = true
+            } else if todayItem.realWorkedTime > dayGoalWorkTime {
+                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 3 /* 야근 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
+                result = true
+            } else if todayItem.realWorkedTime >= dayLeastWorkTime {
+                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 2 /* 정상 출근 완료 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
+                result = true
+            } else {
+                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 1,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
+                result = true
+            }
+
         }
         return result
     }
@@ -446,7 +490,7 @@ class ViewController: UIViewController {
         if todayComponent.hour == 4 {       // TBD : 수정 필요 equal은 좋지 않아 보임
             if isWorking == true {
                 isWorking = false
-                if updateDayWorkStatus() == false {
+                if updateDayWorkStatus(checkToday: false) == false {
                     WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 6 /* 근태 수정 필요 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
                 }
             }
@@ -454,24 +498,40 @@ class ViewController: UIViewController {
         
     }
     @objc func updateNotWorkTime() {
-        ViewController.notWorkedTime += timeInterval
+        //ViewController.notWorkedTime += timeInterval
         commuteComponent = todayCalendar.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: commuteDate)
-        WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: nil, WorkedTime: nil, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: nil, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
+        //WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: nil, WorkedTime: nil, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: nil, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
     }
     @objc func updateCurrentTime() {
         todayDate = Date()
         let todayComponent = todayCalendar.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: todayDate)
         
-        lblCurrentTime.text = convertSimpleFormatToPMAMTime(todayComponent)
+        lblCurrentTime.text = convertSimpleFormatToPMAMTime(todayComponent.hour, minute: todayComponent.minute)
+        if let todayItem = WorkedListDB.readWorkedItem(id: Date()) {
+            let commuteArr = todayItem.commute.split(separator: ":")
+            
+            lblCommuteTime.text = convertSimpleFormatToPMAMTime(Int(commuteArr[0]), minute: Int(commuteArr[1]))
+        }
     }
     
     @objc func updateTime() {
-        ViewController.workedTime += timeInterval
+        if let todayLastAppUseItem = WorkedListDB.readWorkedItem(id: Date()) {
+            let nowComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: Date())
+            let lastAppUseArr = todayLastAppUseItem.lastAppUse.split(separator: ":")
+            
+            let addTime = (nowComponent.hour! - Int(lastAppUseArr[0])!) * 3600 + (nowComponent.minute! - Int(lastAppUseArr[1])!) * 60 + (nowComponent.second! - Int(lastAppUseArr[2])!)
+            ViewController.workedTime += TimeInterval(addTime)
+        }
+        else {
+            // present(BasicOperation.AlertToManage(errorCode: "NothingToUpdateTime"), animated: true, completion: nil)
+        }
         lblWorkingTime.text = convertNSTimeInterval2String(ViewController.workedTime, isBigOne: false)
         lblBigWorkingTime.text = convertNSTimeInterval2String(ViewController.workedTime, isBigOne: true)
         commuteComponent = todayCalendar.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: commuteDate)
         WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: Date(), LastAppUse: Date(), Rest: nil, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: nil, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-        _ = updateDayWorkStatus()
+        _ = updateDayWorkStatus(checkToday: true)
+        
+        refreshDBs()
     }
     
     @objc func updateOffWorkTime() {
@@ -488,54 +548,6 @@ class ViewController: UIViewController {
 //
 //        print(myDateComponents_new.weekOfMonth)
     }
-    // Debug Button //
-    @IBAction func btnDebugPring(_ sender: UIButton) {
-        let result = WorkedListDB.readAllWorkedTime()
-        for i in 0..<result.count {
-            print("\(i) ID \(result[i].workedDate)" + " Commute " + result[i].commute + " OffWork "+result[i].offWork + " Rest \(result[i].rest)" + " RealWorkedTime \(result[i].realWorkedTime)" + " WorkedTime \(result[i].workedTime)" + " WeekDay \(result[i].weekDay)" + " DayWorkStatus \(result[i].dayWorkStatus)" + " SpareTime \(result[i].spareTimeToWork)")
-        }
-    }
-    @IBAction func btnOffWork(_ sender: UIButton) {
-        if isWorking == true {
-            isWorking = false
-            if ViewController.realWorkedTime >= dayGoalWorkTime {
-                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: commuteDate, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 3 /* 야근 */, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-            } else if ViewController.realWorkedTime >= dayLeastWorkTime {
-                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: commuteDate, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 2 /* 정상 출근 완료 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-            } else {
-                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: commuteDate, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 1 /* 정상 */, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-            }               // TBD : 퇴근을 누른 후에 다음날이 되었는데 전날 시간이 Least에 도달하지 못한 경우에 대한 별도 처리가 필요함
-        }
-    }
-    @IBAction func btnDebugNextDay(_ sender: UIButton) {
-        if isWorking == false {
-            isWorking = true
-            let myDateComponents = DateComponents(year: commuteComponent.year, month: commuteComponent.month, day: commuteComponent.day! + debugNextDays, hour: 8, minute: 30)
-            debugNextDate = todayCalendar.date(from: myDateComponents)!
-            let debugNotWorked = 1000.0
-            debugNextDays += 1
-            if let prevWorkedItem = WorkedListDB.readWorkedItem(id: debugNextDate) {
-                ViewController.notWorkedTime = prevWorkedItem.rest
-                ViewController.realWorkedTime = prevWorkedItem.realWorkedTime
-                ViewController.workedTime = prevWorkedItem.workedTime
-                WorkedListDB.updateWorkedTime(id: debugNextDate, Commute: nil, OffWork: debugNextDate, LastAppUse: Date(), Rest: debugNotWorked, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: 1, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-            } else {
-                _ = WorkedListDB.insertWorkedTime(id: debugNextDate, Commute: debugNextDate, OffWork: debugNextDate, LastAppUse: Date(), Rest: debugNotWorked, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: 1, IsWorking: isWorking)
-            }
-        } else {
-            isWorking = false
-            let myDateComponents = DateComponents(year: commuteComponent.year, month: commuteComponent.month, day: commuteComponent.day! + debugNextDays - 1, hour: 17, minute: 30)
-            let myDate = todayCalendar.date(from: myDateComponents)!
-            let debugNotWorked = 24250.0
-            WorkedListDB.updateWorkedTime(id: debugNextDate, Commute: debugNextDate, OffWork: myDate, LastAppUse: Date(), Rest: debugNotWorked, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: commuteComponent.weekday ?? -1, DayWorkStatus: 1, spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
-            
-            
-        }
-    }
-    @IBAction func btnPrintFromDB(_ sender: UIButton) {
-        let result = WorkedListDB.readWorkedItem(id: todayDate)!
-        print("ID \(result.workedDate)" + " Commute " + result.commute + " OffWork "+result.offWork + " Rest \(result.rest)" + " RealWorkedTime \(result.realWorkedTime)" + " WorkedTime \(result.workedTime)" + " WeekDay \(result.weekDay)" + " DayWorkStatus \(result.dayWorkStatus)")
-    }
     
     @IBAction func btnStamp(_ sender: UIButton) {
         if isWorking == false {
@@ -549,6 +561,21 @@ class ViewController: UIViewController {
         }
     }
     
+    @IBAction func makeReset(_ sender: UIButton) {
+        if let _ = WorkedListDB.readWorkedItem(id: Date()) {
+            WorkedListDB.deleteWorkedList(id: Date())
+            isWorking = false
+            isCommute = false
+            workingTimer.invalidate()
+            lblButtonMessage.text = "클릭 시 출근!"
+            ViewController.workedTime = 0
+            ViewController.realWorkedTime = 0
+            ViewController.notWorkedTime = 0
+//            timeToWorkToday = 3600 * 8
+            lblWorkingTime.text = convertNSTimeInterval2String(0, isBigOne: false)
+            lblBigWorkingTime.text = convertNSTimeInterval2String(0, isBigOne: true)
+        }
+    }
     
 }
 

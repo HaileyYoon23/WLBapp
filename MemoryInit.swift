@@ -157,7 +157,7 @@ class InitDB: NSObject {
             if prevStatementExist {
                 updateStatementString += ", "
             }
-            updateStatementString += "DayLeastHour = \(dLM)"
+            updateStatementString += "DayLeastMin = \(dLM)"
             prevStatementExist = true
         }
         if let dLSH = dayLeastStartHour {

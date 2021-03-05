@@ -110,10 +110,13 @@ class WorkedListDB: NSObject {
             sqlite3_bind_int(statement, 9, Int32(DayWorkStatus))
             if WeekDay == 2 {
                 let info = InitDB.readInfo()!
-                let weekInfo = WeekDB.readWeekInfo(id)
-                if weekInfo == nil { print("Error WeekInfo nil")}
-                let initialWorkTime = info.weekLeastHour * 3600 + info.weekLeastMin * 60 - (weekInfo!.numOfNonWorkFullDay * 8 * 3600 + weekInfo!.numOfNonWorkHalfDay * 4 * 3600)
-                sqlite3_bind_int(statement, 10, Int32(initialWorkTime))
+                if let weekInfo = WeekDB.readWeekInfo(id) {
+                    let initialWorkTime = info.weekLeastHour * 3600 + info.weekLeastMin * 60 - (weekInfo.numOfNonWorkFullDay * 8 * 3600 + weekInfo.numOfNonWorkHalfDay * 4 * 3600)
+                    sqlite3_bind_int(statement, 10, Int32(initialWorkTime))
+                } else {
+                    _ = WeekDB.insertWeekInfo(id: Date(), nonworkhour: 0, nonworkmin: 0, numofnonworkfullday: 0, numofnonworkhalfday: 0)
+                }
+                
             } else {
                 var myDateComponents = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: id)
                 myDateComponents.day = myDateComponents.day! - 1
@@ -363,7 +366,7 @@ class WorkedListDB: NSObject {
     }
 
     static func deleteWorkedList(id: Date) {
-        let deleteStatementString = "DELETE FROM WorkedList WHERE Id=\(dbIdFormatter.string(from: id));"
+        let deleteStatementString = "DELETE FROM WorkedList WHERE Id='\(dbIdFormatter.string(from: id))';"
         var statement: OpaquePointer?
         
         if sqlite3_prepare(db, deleteStatementString, -1, &statement, nil) == SQLITE_OK {

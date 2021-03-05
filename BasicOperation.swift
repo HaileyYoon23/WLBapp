@@ -29,8 +29,6 @@ class BasicOperation {
             errorMessage = "숫자만 입력바랍니다."
         case .wrongworktimeinput:
             errorMessage = "올바른 출근시간/퇴근시간으로 입력바랍니다."
-        default:
-            errorMessage = "NULL"
         }
         
         let alert = UIAlertController(title: "경고", message: errorMessage, preferredStyle: UIAlertController.Style.alert)

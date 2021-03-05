@@ -37,11 +37,19 @@ class EditDetailViewController: UIViewController {
     
     var dayLeastHour: Int = 0
     var dayLeastMin: Int = 0
+    var dayGoalHour: Int = 0
+    var dayGoalMin: Int = 0
+    var dayLeastStartHour: Int = 0
+    var dayLeastStartMin: Int = 0
     var dayLeastTime: TimeInterval = 0.0
+    var dayGoalTime: TimeInterval = 0.0
+    var dayLeastStartTime: TimeInterval = 0.0
     var nonWorkFullDay = false
     var nonWorkHalfDay = false
     var workDay = true
     var txtList = [UITextField]()
+    var todayComponent = DateComponents()
+    var fromDateComponent = DateComponents()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -52,11 +60,52 @@ class EditDetailViewController: UIViewController {
         if let info = InitDB.readInfo() {
             dayLeastHour = info.dayLeastHour
             dayLeastMin = info.dayLeastMin
+            dayGoalHour = info.dayGoalHour
+            dayGoalMin = info.dayGoalMin
+            dayLeastStartHour = info.dayLeastStartHour
+            dayLeastStartMin = info.dayLeastStartMin
         }
         dayLeastTime = TimeInterval(dayLeastHour * 3600 + dayLeastMin * 60)
+        dayGoalTime = TimeInterval(dayGoalHour * 3600 + dayGoalMin * 60)
+        dayLeastStartTime = TimeInterval(dayLeastStartHour * 3600 + dayLeastStartMin * 60)
         
+        setCheckedImage()
         showNameOfWeekDay()
         showPrevWorkItem()
+        
+        todayComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: Date())
+        fromDateComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: fromDate)
+        
+        txtOffWorkHour.isUserInteractionEnabled = true
+        txtOffWorkMin.isUserInteractionEnabled = true
+        txtOffWorkHour.backgroundColor = UIColor.white
+        txtOffWorkMin.backgroundColor = UIColor.white
+        
+        if fromDateComponent.day! == todayComponent.day! {
+            if let todayItem = WorkedListDB.readWorkedItem(id: fromDate) {
+                let isWorking = todayItem.isWorking
+                if isWorking {
+                    txtOffWorkHour.isUserInteractionEnabled = false
+                    txtOffWorkMin.isUserInteractionEnabled = false
+                    txtOffWorkHour.backgroundColor = UIColor.lightGray
+                    txtOffWorkMin.backgroundColor = UIColor.lightGray
+                }
+            }
+        }
+    }
+    
+    func setCheckedImage() {
+        if let fromDateItem = WorkedListDB.readWorkedItem(id: fromDate) {
+            let status = fromDateItem.dayWorkStatus
+            switch status {
+            case 4:
+                btnNonFullDayWork.setImage(imageChecked, for: .normal)
+            case 5:
+                btnNonHalfDayWork.setImage(imageChecked, for: .normal)
+            default:
+                btnDayWork.setImage(imageChecked, for: .normal)
+            }
+        }
     }
     
     func showPrevWorkItem() {
@@ -76,8 +125,8 @@ class EditDetailViewController: UIViewController {
             txtCommuteMin.text = String(commuteItem[1])
             txtOffWorkHour.text = String(offWorkItem[0])
             txtOffWorkMin.text = String(offWorkItem[1])
-            txtRestHour.text = String(restHour)
-            txtRestMin.text = String(restMin)
+            txtRestHour.text = (restHour == 0) ? "00" : String(restHour)
+            txtRestMin.text = (restMin == 0) ? "00" : String(restMin)
             lblRealWorkTime.text = String(format: "%02d : %02d", realWorkHour, realWorkMin)
             
         } else {
@@ -270,7 +319,7 @@ class EditDetailViewController: UIViewController {
         changeWorkStatus(nonworkfullday: nonWorkFullDay, nonworkhalfday: nonWorkHalfDay, workday: workDay)
     }
     
-    @IBAction func btnEditComplete(_ sender: UIButton) {        // TBD : RealWorkedTime 변경 시, 전체 SpareTime 변경
+    @IBAction func btnEditComplete(_ sender: UIButton) {
         for txt in txtList {
             if let writtenTime = txt.text {
                 if writtenTime == "" { txt.text = "00"}
@@ -320,11 +369,27 @@ class EditDetailViewController: UIViewController {
             }
             let realWorkHour = Int(realWorkTime / 3600)
             let realWorkMin = Int(realWorkTime / 60) % 60
+            let commuteArr = prevWorkedItem.commute.split(separator: ":")
+            let commuteTimeInterval = TimeInterval(Int(commuteArr[0])! * 3600 + Int(commuteArr[1])! * 60 + Int(commuteArr[2])!)
+            
             var dayWorkStatus = prevWorkedItem.dayWorkStatus
             
             if workDay {
-                if realWorkTime >= dayLeastTime {
-                    dayWorkStatus = 2 /* 정상 출근 완료 */
+                if commuteTimeInterval > dayLeastStartTime {
+                    dayWorkStatus = 7 /* 지각 */
+                }
+                if todayComponent.day == fromDateComponent.day {
+                    dayWorkStatus = 1
+                } else {
+                    if commuteTimeInterval > dayLeastStartTime {
+                        dayWorkStatus = 7 /* 지각 */
+                    } else if realWorkTime > dayGoalTime {
+                        dayWorkStatus = 3 /* 야근 */
+                    } else if realWorkTime < dayLeastTime {
+                        dayWorkStatus = 6 /* 근태 수정 필요 */
+                    } else if realWorkTime >= dayLeastTime {
+                        dayWorkStatus = 2 /* 정상 출근 완료 */
+                    }
                 }
                 lblRealWorkTime.text = String(format: "%02d : %02d", realWorkHour, realWorkMin)
             } else if nonWorkFullDay {
@@ -335,9 +400,15 @@ class EditDetailViewController: UIViewController {
             }
             WorkedListDB.updateWorkedTime(id: fromDate, Commute: CommuteDate, OffWork: OffWorkDate, LastAppUse: Date(), Rest: restTime, RealWorkedTime: realWorkTime, WorkedTime: workTime, WeekDay: prevWorkedItem.weekDay, DayWorkStatus: dayWorkStatus, spareTimeIfRealTimeIsNil: nil, IsWorking: nil)
             
-            ViewController.notWorkedTime = restTime
-            ViewController.realWorkedTime = realWorkTime
-            ViewController.workedTime = workTime
+            let todayComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: Date())
+            let fromDateComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: fromDate)
+            
+            
+            if fromDateComponent.day! == todayComponent.day! {          // if fromDate is Today!
+                ViewController.notWorkedTime = restTime
+                ViewController.realWorkedTime = realWorkTime
+                ViewController.workedTime = workTime
+            }
             
             var nextDateComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: fromDate)
             nextDateComponent = DateComponents(year: nextDateComponent.year, month: nextDateComponent.month, day: nextDateComponent.day! + 1)
@@ -345,7 +416,7 @@ class EditDetailViewController: UIViewController {
             var tempComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: nextDate)
             while let nextDateWorkedItem = WorkedListDB.readWorkedItem(id: nextDate) {
                 WorkedListDB.updateWorkedTime(id: nextDate, Commute: nil, OffWork: nil, LastAppUse: nil, Rest: nil, RealWorkedTime: nextDateWorkedItem.realWorkedTime, WorkedTime: nil, WeekDay: tempComponent.weekday, DayWorkStatus: nil, spareTimeIfRealTimeIsNil: nil, IsWorking: nil)
-                
+
                 nextDateComponent = DateComponents(year: tempComponent.year, month: tempComponent.month, day: tempComponent.day! + 1)
                 nextDate = Calendar.current.date(from: nextDateComponent)!
                 tempComponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: nextDate)
@@ -379,6 +450,10 @@ class EditDetailViewController: UIViewController {
             
             present(nonExistItemAlert, animated: true, completion: nil)
         }
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+         self.view.endEditing(true)
     }
 }
 

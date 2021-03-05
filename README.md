@@ -11,7 +11,7 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 
 <br>
 이 조화는 더욱 오랜 회사생활을 즐겁게 해줄 수 있다.<br>
-허나 iOS 기준, AppStore에 나와있는 어플들은 다양한 유연근무제 형식에 걸맞게 Config.를 하기 힘들고 정말 중요한 **오늘 몇시부터 퇴근 가능** 에 대한 정보를 쉽게 보기 힘들다.<br>
+허나 iOS 기준, AppStore에 나와있는 어플들은 다양한 유연근무제 형식에 걸맞게 Config.를 하기 힘들고 정말 중요한 **오늘 몇시부터 퇴근 가능**에 대한 정보를 쉽게 보기 힘들다.<br>
 따라서 해당 App.을 제작해보기로 한다.
 <br><br>
 

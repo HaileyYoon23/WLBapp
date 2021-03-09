@@ -19,10 +19,11 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 
 ## 1.2 Outline
 
-# 2. Code
-## 2.1 
+# 2. Development
+# 2.1 StoryBoard
+<img src="https://user-images.githubusercontent.com/35250492/110471138-1d459200-811f-11eb-9901-24fec2ce4283.png" width="600">
 
-# 3. StoryBoard
+# 3. Result
 ## 3.1 Input
 ## 3.2 Output
 

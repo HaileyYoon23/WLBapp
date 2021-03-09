@@ -25,3 +25,10 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 # 3. StoryBoard
 ## 3.1 Input
 ## 3.2 Output
+
+# 4. 업데이트 예정
+
+1. 토/일 자동 비근로 설정
+2. 토/일 제외, 일주일의 마지막 근로일만 '퇴근가능시간' 으로 진행. 나머지는 '퇴근목표시간'
+3. DayGoal 말고 SpareTime으로 퇴근시간 계산시, DayGoal 초과시 퇴근시간 수정 필요
+4. Detail 탭에 금주 총 근무시간 / 휴게시간 display

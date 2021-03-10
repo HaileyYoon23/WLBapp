@@ -23,7 +23,7 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 
 
 # 2. Development
-# 2.1 Code Structure
+## 2.1 Code Structure
 
 ```
 
@@ -36,51 +36,51 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 
 ```
 
-# 2.1.1 ViewController.swift  
+### 2.1.1 ViewController.swift  
 앱 실행 시 첫 화면  
-<img src="https://user-images.githubusercontent.com/35250492/110625801-3e6fb680-81e3-11eb-8811-c9447316550a.PNG" width="300">  
+출근 / 휴게 시작 / 휴게 끝 / 퇴근 의 근무 상태 변경 시 첫 화면의 Button을 눌러 상태 변경 실행<br><br>
 
-# 2.1.2 DetailViewController.swift  
+### 2.1.2 DetailViewController.swift  
 Detail 정보 표시 화면  
-<img src="https://user-images.githubusercontent.com/35250492/110625826-47f91e80-81e3-11eb-9d73-ab21af593904.PNG" width="300">  
+금주 모든 근무 기록을 나타냄 <br><br>
 
-# 2.1.3 EditDetailViewController.swift  
+### 2.1.3 EditDetailViewController.swift  
 각 Detail 정보 수정 화면  
-<img src="https://user-images.githubusercontent.com/35250492/110626114-aa521f00-81e3-11eb-903a-502dfc25d4c5.PNG" width="300">
+출근시간/퇴근시간/휴게시간 의 정보 수정 가능 <br><br>
 
-# 2.1.4 SettingViewController.swift  
+### 2.1.4 SettingViewController.swift  
 사용자 별 근무 시간 설정 화면  
-<img src="https://user-images.githubusercontent.com/35250492/110625820-4596c480-81e3-11eb-959d-80ba4ab9a170.PNG" width="300">  
-<br>
-# 2.2 DB Structure  
+해당 정보에 따라 정상출근완료/근태수정필요/지각 등의 출근 상태가 결정됨 
+<br><br>
+## 2.2 DB Structure  
 근무 정보 DB는 복잡성을 요구하지는 않지만, 계속해서 DB를 Update 하므로 프로그램 충돌 시의 DB 보존이 가장 중요하다.  
 따라서 간편하고 트랜잭션과 원자성 동작을 지원하는 **SQLite**를 사용하였다.  
-# 2.2.1 MemoryWorkTime.swift  
+### 2.2.1 MemoryWorkTime.swift  
 <br>
 
 |Id|Commute|OffWork|LastAppUse|Rest|RealWorkedTime|WorkedTime|WeekDay|DayWorkStatus|SpareTimeToWork|IsWorking|
 |:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
 |CHAR(255)|CHAR(255)|CHAR(255)|CHAR(255)|Int|Int|Int|Int|Int|Int|Int|
-|2021.03.02|09:18:03|19:59:24|2405||32455|38460|3|3|111545|0|
+|2021.03.02|09:18:03|19:59:24|19:59:24|2405|32455|38460|3|3|111545|0|
 |...|...|...|...|...|...|...|...|...|...|...|
 
 
-# 2.2.2 MemoryInit.swift  
+### 2.2.2 MemoryInit.swift  
 |Id|WeekLeastHour|WeekLeastMin|DayGoalHour|DayGoalMin|DayLeastHour|DayLeastMin|DayLeastStartHour|DayLeastStartMin|LastUpdatedDate|
 |:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
 |Int|Int|Int|Int|Int|Int|Int|Int|Int|CHAR(255)|
 |0|40|0|8|0|4|0|15|0|19:59:24|
 
 
-# 2.2.3 MemoryWeekInfo.swift  
+### 2.2.3 MemoryWeekInfo.swift  
 |Id|NonWorkHour|NonWorkMin|NumOfNonWorkFullDay|NumOfNonWorkHalfDay|
 |:-----:|:-----:|:-----:|:-----:|:-----:|
 |CHAR(255)|Int|Int|Int|Int|
 |2021.03.week1|12|0|1|1|
 |...|...|...|...|...|
 
-
-# 2.2 StoryBoard
+<br>
+## 2.2 StoryBoard
 <img src="https://user-images.githubusercontent.com/35250492/110471138-1d459200-811f-11eb-9901-24fec2ce4283.png" width="600">
 
 # 3. Result

@@ -81,6 +81,8 @@ Detail 정보 표시 화면
 |...|...|...|...|...|
 
 <br>
+<br>
+
 ## 2.2 StoryBoard
 <img src="https://user-images.githubusercontent.com/35250492/110471138-1d459200-811f-11eb-9901-24fec2ce4283.png" width="600">
 

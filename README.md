@@ -20,7 +20,56 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 ## 1.2 Outline
 
 # 2. Development
-# 2.1 StoryBoard
+# 2.1 Code Structure
+
+```
+
+┌ ViewController.swift
+│ 
+├ DetailViewController.swift
+│ └ EditDetailViewController.swift
+│
+└ SettingViewController.swift
+
+```
+
+# 2.1.1 ViewController.swift  
+앱 실행 시 첫 화면  
+# 2.1.2 DetailViewController.swift  
+Detail 정보 표시 화면  
+# 2.1.3 EditDetailViewController.swift  
+각 Detail 정보 수정 화면  
+# 2.1.4 SettingViewController.swift  
+사용자 별 근무 시간 설정 화면  
+<br>
+# 2.2 DB Structure  
+MongoDB 사용
+# 2.2.1 MemoryWorkTime.swift  
+<br>
+
+|Id|Commute|OffWork|LastAppUse|Rest|RealWorkedTime|WorkedTime|WeekDay|DayWorkStatus|SpareTimeToWork|IsWorking|
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+|CHAR(255)|CHAR(255)|CHAR(255)|CHAR(255)|Int|Int|Int|Int|Int|Int|Int|
+|2021.03.02|09:18:03|19:59:24|2405||32455|38460|3|3|111545|0|
+|...|...|...|...|...|...|...|...|...|...|...|
+
+
+# 2.2.2 MemoryInit.swift  
+|Id|WeekLeastHour|WeekLeastMin|DayGoalHour|DayGoalMin|DayLeastHour|DayLeastMin|DayLeastStartHour|DayLeastStartMin|LastUpdatedDate|
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+|Int|Int|Int|Int|Int|Int|Int|Int|Int|CHAR(255)|
+|0|40|0|8|0|4|0|15|0|19:59:24|
+
+
+# 2.2.3 MemoryWeekInfo.swift  
+|Id|NonWorkHour|NonWorkMin|NumOfNonWorkFullDay|NumOfNonWorkHalfDay|
+|:-----:|:-----:|:-----:|:-----:|:-----:|
+|CHAR(255)|Int|Int|Int|Int|
+|2021.03.week1|12|0|1|1|
+|...|...|...|...|...|
+
+
+# 2.2 StoryBoard
 <img src="https://user-images.githubusercontent.com/35250492/110471138-1d459200-811f-11eb-9901-24fec2ce4283.png" width="600">
 
 # 3. Result

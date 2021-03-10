@@ -43,7 +43,8 @@ Detail 정보 표시 화면
 사용자 별 근무 시간 설정 화면  
 <br>
 # 2.2 DB Structure  
-MongoDB 사용
+근무 정보 DB는 복잡성을 요구하지는 않지만, 계속해서 DB를 Update 하므로 프로그램 충돌 시의 DB 보존이 가장 중요하다.  
+따라서 간편하고 트랜잭션과 원자성 동작을 지원하는 **SQLite**를 사용하였다.  
 # 2.2.1 MemoryWorkTime.swift  
 <br>
 

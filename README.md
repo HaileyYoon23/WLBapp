@@ -17,7 +17,10 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 
 
 
-## 1.2 Outline
+## 1.2 BraninStorming  
+
+<img src="https://user-images.githubusercontent.com/35250492/110629279-56493980-81e7-11eb-9f3f-d72b8acc05f2.jpg" width="600">
+
 
 # 2. Development
 # 2.1 Code Structure
@@ -88,21 +91,25 @@ Detail 정보 표시 화면
 <img src="https://user-images.githubusercontent.com/35250492/110626590-454af900-81e4-11eb-9bf3-6c318b12c3b3.png" width="300"> <br><br>
 
 * 출근 Color Status  
+
 <img src="https://user-images.githubusercontent.com/35250492/110626855-965aed00-81e4-11eb-891e-25aa761dfd18.jpg" width="300"> <br><br>
 
 ## 3.2 DetailViewController.swift  
 
 * 요일별 출근 Detail 표출  
+
 <img src="https://user-images.githubusercontent.com/35250492/110626964-bb4f6000-81e4-11eb-9a93-f65460accb8a.PNG" width="300"> <br><br>
 
 ## 3.3 EditDetailViewController.swift
 
 * 선택 요일에 대한 출근시간/퇴근시간/휴게시간 수정 (당일 수정 시, 퇴근 전일 경우 퇴근시간 수정 불가)
+
 <img src="https://user-images.githubusercontent.com/35250492/110627166-f8b3ed80-81e4-11eb-8bdb-1769be549098.PNG" width="300"> <br><br>
 
 ## 3.4 SettingViewController.swift  
 
 * 사용자 별 출퇴근 관리 설정 변경 (해당 시간에 따라 정상출근/근태수정필요/지각 및 퇴근가능시간 결정)  
+
 <img src="https://user-images.githubusercontent.com/35250492/110627497-652eec80-81e5-11eb-8c55-3af8b693663e.PNG" width="300"> <br><br>
 
 # 4. 업데이트 예정

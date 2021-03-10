@@ -35,12 +35,19 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 
 # 2.1.1 ViewController.swift  
 앱 실행 시 첫 화면  
+<img src="https://user-images.githubusercontent.com/35250492/110625801-3e6fb680-81e3-11eb-8811-c9447316550a.PNG" width="300">  
+
 # 2.1.2 DetailViewController.swift  
 Detail 정보 표시 화면  
+<img src="https://user-images.githubusercontent.com/35250492/110625826-47f91e80-81e3-11eb-9d73-ab21af593904.PNG" width="300">  
+
 # 2.1.3 EditDetailViewController.swift  
 각 Detail 정보 수정 화면  
+<img src="https://user-images.githubusercontent.com/35250492/110626114-aa521f00-81e3-11eb-903a-502dfc25d4c5.PNG" width="300">
+
 # 2.1.4 SettingViewController.swift  
 사용자 별 근무 시간 설정 화면  
+<img src="https://user-images.githubusercontent.com/35250492/110625820-4596c480-81e3-11eb-959d-80ba4ab9a170.PNG" width="300">  
 <br>
 # 2.2 DB Structure  
 근무 정보 DB는 복잡성을 요구하지는 않지만, 계속해서 DB를 Update 하므로 프로그램 충돌 시의 DB 보존이 가장 중요하다.  
@@ -74,8 +81,29 @@ Detail 정보 표시 화면
 <img src="https://user-images.githubusercontent.com/35250492/110471138-1d459200-811f-11eb-9901-24fec2ce4283.png" width="600">
 
 # 3. Result
-## 3.1 Input
-## 3.2 Output
+## 3.1 ViewController.swift  
+
+* 시간 경과 시, bar update  
+<img src="https://user-images.githubusercontent.com/35250492/110626585-43813580-81e4-11eb-92ed-acd6e243a3e1.PNG" width="300">
+<img src="https://user-images.githubusercontent.com/35250492/110626590-454af900-81e4-11eb-9bf3-6c318b12c3b3.png" width="300"> <br><br>
+
+* 출근 Color Status  
+<img src="https://user-images.githubusercontent.com/35250492/110626855-965aed00-81e4-11eb-891e-25aa761dfd18.jpg" width="300"> <br><br>
+
+## 3.2 DetailViewController.swift  
+
+* 요일별 출근 Detail 표출  
+<img src="https://user-images.githubusercontent.com/35250492/110626964-bb4f6000-81e4-11eb-9a93-f65460accb8a.PNG" width="300"> <br><br>
+
+## 3.3 EditDetailViewController.swift
+
+* 선택 요일에 대한 출근시간/퇴근시간/휴게시간 수정 (당일 수정 시, 퇴근 전일 경우 퇴근시간 수정 불가)
+<img src="https://user-images.githubusercontent.com/35250492/110627166-f8b3ed80-81e4-11eb-8bdb-1769be549098.PNG" width="300"> <br><br>
+
+## 3.4 SettingViewController.swift  
+
+* 사용자 별 출퇴근 관리 설정 변경 (해당 시간에 따라 정상출근/근태수정필요/지각 및 퇴근가능시간 결정)  
+<img src="https://user-images.githubusercontent.com/35250492/110627497-652eec80-81e5-11eb-8c55-3af8b693663e.PNG" width="300"> <br><br>
 
 # 4. 업데이트 예정
 

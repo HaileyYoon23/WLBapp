@@ -21,6 +21,7 @@ iOS App. to Manage Working Time for WLB(Work/Life Balance)
 
 <img src="https://user-images.githubusercontent.com/35250492/110629279-56493980-81e7-11eb-9f3f-d72b8acc05f2.jpg" width="600">
 
+---
 
 # 2. Development
 ## 2.1 Code Structure
@@ -83,6 +84,7 @@ Detail 정보 표시 화면
 ## 2.2 StoryBoard
 <img src="https://user-images.githubusercontent.com/35250492/110471138-1d459200-811f-11eb-9901-24fec2ce4283.png" width="600">
 
+---
 # 3. Result
 ## 3.1 ViewController.swift  
 
@@ -111,7 +113,7 @@ Detail 정보 표시 화면
 * 사용자 별 출퇴근 관리 설정 변경 (해당 시간에 따라 정상출근/근태수정필요/지각 및 퇴근가능시간 결정)  
 
 <img src="https://user-images.githubusercontent.com/35250492/110627497-652eec80-81e5-11eb-8c55-3af8b693663e.PNG" width="300"> <br><br>
-
+---
 # 4. 업데이트 예정
 
 1. 토/일 자동 비근로 설정

@@ -1,6 +1,7 @@
 # WLBapp
-iOS App. to Manage Working Time for WLB(Work/Life Balance)
+iOS App. to Manage Working Time for WLB(Work/Life Balance)  
 
+<img src="https://user-images.githubusercontent.com/35250492/111014907-6a5c8900-83e9-11eb-8324-2e893439366f.png" widt="100">
 
 # 1. Introduction
 ## 1.1 Purpose

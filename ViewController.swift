@@ -476,7 +476,7 @@ class ViewController: UIViewController {
                 WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: nil, LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 2 /* 정상 출근 완료 */,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
                 result = true
             } else {
-                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: 1,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
+                WorkedListDB.updateWorkedTime(id: commuteDate, Commute: nil, OffWork: Date(), LastAppUse: Date(), Rest: ViewController.notWorkedTime, RealWorkedTime: ViewController.realWorkedTime, WorkedTime: ViewController.workedTime, WeekDay: todayComponent.weekday ?? -1, DayWorkStatus: nil,spareTimeIfRealTimeIsNil: nil, IsWorking: isWorking)
                 result = true
             }
 

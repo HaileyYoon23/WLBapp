@@ -33,19 +33,22 @@ class DetailViewController: UIViewController {
     @IBOutlet var lblSatOffWorkTime: UILabel!
     @IBOutlet var lblSunOffWorkTime: UILabel!
     
-    @IBOutlet var lblMonNotWorkTime: UILabel!
-    @IBOutlet var lblTueNotWorkTime: UILabel!
-    @IBOutlet var lblWedNotWorkTime: UILabel!
-    @IBOutlet var lblThrNotWorkTime: UILabel!
-    @IBOutlet var lblFriNotWorkTime: UILabel!
-    @IBOutlet var lblSatNotWorkTime: UILabel!
-    @IBOutlet var lblSunNotWorkTime: UILabel!
+    @IBOutlet var lblMonRealWorkTime: UILabel!
+    @IBOutlet var lblTueRealWorkTime: UILabel!
+    @IBOutlet var lblWedRealWorkTime: UILabel!
+    @IBOutlet var lblThrRealWorkTime: UILabel!
+    @IBOutlet var lblFriRealWorkTime: UILabel!
+    @IBOutlet var lblSatRealWorkTime: UILabel!
+    @IBOutlet var lblSunRealWorkTime: UILabel!
+    
+    @IBOutlet var lblTotalWorkTime: UILabel!
+    @IBOutlet var lblSpareWorkTime: UILabel!
     
     // Variable Definition
     var weekTextList: [UILabel] = []
     var weekCommuteList: [UILabel] = []
     var weekOffWorkList: [UILabel] = []
-    var weekNotWorkList: [UILabel] = []
+    var weekRealWorkList: [UILabel] = []
     var weekDayNumber: Int = 0      // 0 : Mon,  1 : Tue,  2 : Web,  3 : Thr,  4 : Fri,  5 : Sat,  6 : Sun
     let viewcontroller = ViewController()
     var datecomponent = DateComponents()
@@ -62,14 +65,18 @@ class DetailViewController: UIViewController {
         weekTextList = [lblMonText, lblTueText, lblWedText, lblThrText, lblFriText, lblSatText, lblSunText]
         weekCommuteList = [lblMonCommuteTime, lblTueCommuteTime, lblWedCommuteTime, lblThrCommuteTime, lblFriCommuteTime, lblSatCommuteTime, lblSunCommuteTime]
         weekOffWorkList = [lblMonOffWorkTime, lblTueOffWorkTime, lblWedOffWorkTime, lblThrOffWorkTime, lblFriOffWorkTime, lblSatOffWorkTime, lblSunOffWorkTime]
-        weekNotWorkList = [lblMonNotWorkTime, lblTueNotWorkTime, lblWedNotWorkTime, lblThrNotWorkTime, lblFriNotWorkTime, lblSatNotWorkTime, lblSunNotWorkTime]
+        weekRealWorkList = [lblMonRealWorkTime, lblTueRealWorkTime, lblWedRealWorkTime, lblThrRealWorkTime, lblFriRealWorkTime, lblSatRealWorkTime, lblSunRealWorkTime]
         
         datecomponent = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day , .weekday, .hour, .minute, .second], from: Date())
         weekDayNumber = ((datecomponent.weekday ?? 0) + 5) % 7
-        Timer.scheduledTimer(timeInterval: 1, target: self, selector: historySelector, userInfo: nil, repeats: true)
+        Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: historySelector, userInfo: nil, repeats: true)
     }
     
     func showDetailWokredListOfWeek() {
+        lblSpareWorkTime.text = "--:--"
+        lblTotalWorkTime.text = "--:--"
+        var totalWorkedTimeInterval: TimeInterval = 0
+        var spareTime: TimeInterval = 0
         for i in 0...weekDayNumber {
             let myDateComponents = DateComponents(year: datecomponent.year, month: datecomponent.month, day: (datecomponent.day ?? 0) - weekDayNumber + i)
             let myDate = Calendar.current.date(from: myDateComponents)!
@@ -77,31 +84,38 @@ class DetailViewController: UIViewController {
                 if workedTime.dayWorkStatus == 4 {
                     weekCommuteList[i].text = ""
                     weekOffWorkList[i].text = "휴가"
-                    weekNotWorkList[i].text = ""
+                    weekRealWorkList[i].text = ""
                 } else if workedTime.dayWorkStatus == 5 {
                     weekCommuteList[i].text = ""
                     weekOffWorkList[i].text = "반차"
-                    weekNotWorkList[i].text = ""
+                    weekRealWorkList[i].text = ""
                 } else {
                     weekCommuteList[i].text = workedTime.commute
                     weekOffWorkList[i].text = workedTime.offWork
-                    weekNotWorkList[i].text = String(format: "%02d:%02d:%02d", Int(workedTime.rest/3600), Int(workedTime.rest/60) % 60, Int(workedTime.rest) % 60)
+                    weekRealWorkList[i].text = String(format: "%02d:%02d", Int(workedTime.realWorkedTime/3600), Int(workedTime.realWorkedTime/60) % 60)
                 }
+                totalWorkedTimeInterval += workedTime.realWorkedTime
+                spareTime = workedTime.spareTimeToWork
+                
             } else {
                 weekCommuteList[i].text = "--:--"
                 weekOffWorkList[i].text = "--:--"
-                weekNotWorkList[i].text = "--:--"
+                weekRealWorkList[i].text = "--:--"
             }
             
             
             
 //            print("rest = \(workedTime.rest) hour = \((workedTime.rest)/3600) min = \((workedTime.rest)/60)")
         }
+        
         for j in weekDayNumber+1..<7 {
             weekCommuteList[j].text = "--:--"
             weekOffWorkList[j].text = "--:--"
-            weekNotWorkList[j].text = "--:--"
+            weekRealWorkList[j].text = "--:--"
         }
+        
+        lblTotalWorkTime.text = String(format: "%02d:%02d", Int(totalWorkedTimeInterval/3600), Int(totalWorkedTimeInterval/60) % 60)
+        lblSpareWorkTime.text = String(format: "%02d:%02d", Int(spareTime/3600), Int(spareTime/60) % 60)
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {

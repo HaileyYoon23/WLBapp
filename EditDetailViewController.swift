@@ -377,20 +377,14 @@ class EditDetailViewController: UIViewController {
             if workDay {
                 if commuteTimeInterval > dayLeastStartTime {
                     dayWorkStatus = 7 /* 지각 */
+                } else if realWorkTime > dayGoalTime {
+                    dayWorkStatus = 3 /* 야근 */
+                } else if realWorkTime < dayLeastTime {
+                    dayWorkStatus = 6 /* 근태 수정 필요 */
+                } else if realWorkTime >= dayLeastTime {
+                    dayWorkStatus = 2 /* 정상 출근 완료 */
                 }
-                if todayComponent.day == fromDateComponent.day {
-                    dayWorkStatus = 1
-                } else {
-                    if commuteTimeInterval > dayLeastStartTime {
-                        dayWorkStatus = 7 /* 지각 */
-                    } else if realWorkTime > dayGoalTime {
-                        dayWorkStatus = 3 /* 야근 */
-                    } else if realWorkTime < dayLeastTime {
-                        dayWorkStatus = 6 /* 근태 수정 필요 */
-                    } else if realWorkTime >= dayLeastTime {
-                        dayWorkStatus = 2 /* 정상 출근 완료 */
-                    }
-                }
+                
                 lblRealWorkTime.text = String(format: "%02d : %02d", realWorkHour, realWorkMin)
             } else if nonWorkFullDay {
                 dayWorkStatus = 4
